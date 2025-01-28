@@ -1,0 +1,208 @@
+[
+  {
+    "id": "51299584e1fca240",
+    "type": "group",
+    "z": "d77c64c1bdc91473",
+    "name": "Backrest - Get Config",
+    "style": {
+      "label": true
+    },
+    "nodes": [
+      "9934f99260e429fb",
+      "acd107e6aa8c8012",
+      "5fd39c155ca3f4a9"
+    ],
+    "x": 154,
+    "y": 139,
+    "w": 532,
+    "h": 82
+  },
+  {
+    "id": "9934f99260e429fb",
+    "type": "backrest-query",
+    "z": "d77c64c1bdc91473",
+    "g": "51299584e1fca240",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/GetConfig",
+    "inputType": "msg",
+    "inputValue": "payload",
+    "x": 420,
+    "y": 180,
+    "wires": [
+      [
+        "5fd39c155ca3f4a9"
+      ]
+    ]
+  },
+  {
+    "id": "acd107e6aa8c8012",
+    "type": "inject",
+    "z": "d77c64c1bdc91473",
+    "g": "51299584e1fca240",
+    "name": "",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"lastN\": 1000, \"selector\": {\"repoId\": \"my-repo-id\"}}",
+    "payloadType": "json",
+    "x": 250,
+    "y": 180,
+    "wires": [
+      [
+        "9934f99260e429fb"
+      ]
+    ]
+  },
+  {
+    "id": "5fd39c155ca3f4a9",
+    "type": "debug",
+    "z": "d77c64c1bdc91473",
+    "g": "51299584e1fca240",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 590,
+    "y": 180,
+    "wires": []
+  },
+  {
+    "id": "06bd2857df140cc4",
+    "type": "backrest-config",
+    "host": "127.0.0.1",
+    "port": "9898"
+  },
+  {
+    "id": "30e4bb3cc02c93dc",
+    "type": "group",
+    "z": "d77c64c1bdc91473",
+    "name": "Backrest - Get last 1000 operations for every repo",
+    "style": {
+      "label": true
+    },
+    "nodes": [
+      "d15bd4cb18b5c25b",
+      "980c1eb42fa05f0c",
+      "1900e3107f58437e",
+      "e4fcc6879f47f07b",
+      "cb1d42a3dac3286b"
+    ],
+    "x": 154,
+    "y": 259,
+    "w": 892,
+    "h": 82
+  },
+  {
+    "id": "d15bd4cb18b5c25b",
+    "type": "backrest-query",
+    "z": "d77c64c1bdc91473",
+    "g": "30e4bb3cc02c93dc",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/GetOperations",
+    "inputType": "jsonata",
+    "inputValue": "{\t   \"lastN\": 1000,\t    \"selector\": {\t       \"repoId\": repo.id\t    }\t}\t",
+    "x": 780,
+    "y": 300,
+    "wires": [
+      [
+        "1900e3107f58437e"
+      ]
+    ]
+  },
+  {
+    "id": "980c1eb42fa05f0c",
+    "type": "inject",
+    "z": "d77c64c1bdc91473",
+    "g": "30e4bb3cc02c93dc",
+    "name": "",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "{\"lastN\": 1000, \"selector\": {\"repoId\": \"my-repo-id\"}}",
+    "payloadType": "json",
+    "x": 250,
+    "y": 300,
+    "wires": [
+      [
+        "e4fcc6879f47f07b"
+      ]
+    ]
+  },
+  {
+    "id": "1900e3107f58437e",
+    "type": "debug",
+    "z": "d77c64c1bdc91473",
+    "g": "30e4bb3cc02c93dc",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 950,
+    "y": 300,
+    "wires": []
+  },
+  {
+    "id": "e4fcc6879f47f07b",
+    "type": "backrest-query",
+    "z": "d77c64c1bdc91473",
+    "g": "30e4bb3cc02c93dc",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/GetConfig",
+    "inputType": "msg",
+    "inputValue": "payload",
+    "x": 440,
+    "y": 300,
+    "wires": [
+      [
+        "cb1d42a3dac3286b"
+      ]
+    ]
+  },
+  {
+    "id": "cb1d42a3dac3286b",
+    "type": "function",
+    "z": "d77c64c1bdc91473",
+    "g": "30e4bb3cc02c93dc",
+    "name": "split",
+    "func": "// Configurable values\nconst sourceProperty = \"payload.repos\"; // Property to split on\nconst targetProperty = \"repo\"; // Property to set split values to\n\n// Fetch the array or string to split\nconst sourceValue = RED.util.getMessageProperty(msg, sourceProperty);\n\nif (!Array.isArray(sourceValue) && typeof sourceValue !== \"string\") {\n    node.error(\"Source property must be an array or string to split.\", msg);\n    return null; // Halt further processing\n}\n\n// Prepare the new messages array\nconst messages = [];\n\n// Iterate over the source value\nfor (const item of sourceValue) {\n    // Clone the original message to avoid modifying the input\n    const newMsg = RED.util.cloneMessage(msg);\n\n    // Set the target property with the split value\n    RED.util.setMessageProperty(newMsg, targetProperty, item, true);\n\n    // Push the new message to the array\n    messages.push(newMsg);\n}\n\n// Send the new messages as an array\nreturn [messages];",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 610,
+    "y": 300,
+    "wires": [
+      [
+        "d15bd4cb18b5c25b"
+      ]
+    ]
+  }
+]

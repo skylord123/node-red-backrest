@@ -1,0 +1,39 @@
+<script type="text/javascript">
+    RED.nodes.registerType('backrest-config', {
+        category: 'config',
+        defaults: {
+            host: { value: '' },
+            port: { value: 9898 }
+        },
+        credentials: {
+            username: { type: 'text' },
+            password: { type: 'password' }
+        },
+        label: function() {
+            return this.host + ':' + this.port;
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="backrest-config">
+    <div class="form-row">
+        <label for="node-config-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-config-input-name" placeholder="Name">
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-host"><i class="fa fa-server"></i> Host</label>
+        <input type="text" id="node-config-input-host" placeholder="localhost" />
+    </div>
+    <div class="form-row">
+        <label for="node-config-input-port"><i class="fa fa-forward"></i> Port</label>
+        <input type="text" id="node-config-input-port" placeholder="9898" />
+    </div>
+    <div class="form-row">
+        <label for="node-config-username"><i class="fa fa-user"></i> Username</label>
+        <input type="text" id="node-config-username" placeholder="" />
+    </div>
+    <div class="form-row">
+        <label for="node-config-password"><i class="fa fa-lock"></i> Password</label>
+        <input type="password" id="node-config-password" placeholder="" />
+    </div>
+</script>
