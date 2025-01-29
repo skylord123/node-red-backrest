@@ -19,7 +19,7 @@
   },
   {
     "id": "9934f99260e429fb",
-    "type": "backrest-query",
+    "type": "backrest-api",
     "z": "d77c64c1bdc91473",
     "g": "51299584e1fca240",
     "name": "",
@@ -107,7 +107,7 @@
   },
   {
     "id": "d15bd4cb18b5c25b",
-    "type": "backrest-query",
+    "type": "backrest-api",
     "z": "d77c64c1bdc91473",
     "g": "30e4bb3cc02c93dc",
     "name": "",
@@ -169,7 +169,7 @@
   },
   {
     "id": "e4fcc6879f47f07b",
-    "type": "backrest-query",
+    "type": "backrest-api",
     "z": "d77c64c1bdc91473",
     "g": "30e4bb3cc02c93dc",
     "name": "",

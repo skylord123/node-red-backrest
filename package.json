@@ -16,7 +16,7 @@
   "node-red": {
     "nodes": {
       "backrest-config": "backrest-config.js",
-      "backrest-query": "backrest-query.js"
+      "backrest-api": "backrest-api.js"
     }
   },
   "dependencies": {

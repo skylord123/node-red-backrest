@@ -1,0 +1,346 @@
+<script type="text/javascript">
+    RED.nodes.registerType('backrest-api', {
+        category: 'backrest',
+        color: "#008080",
+        defaults: {
+            name: { value: "" },
+            config: { type: "backrest-config", required: true },
+            endpoint: { value: "/v1.Backrest/GetOperations" },
+            inputType: { value: "msg", required: false },
+            inputValue: { value: "payload", required: false }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "database.png",
+        label: function () {
+            return this.name || "Backrest API";
+        },
+        oneditprepare: function () {
+            const apiDetails = {
+                "/v1.Backrest/GetOperations": {
+                    description: "Fetch the list of operations from the Backrest server.",
+                    input: {
+                        type: "object",
+                        example: {
+                            "lastN": 1000,               // Number of recent operations to retrieve
+                            "selector": {
+                                "repoId": "repo-id"      // Repository identifier (optional)
+                            }
+                        }
+                    },
+                    output: {
+                        description: "Array of operations with their details (e.g., type, status, timestamps)."
+                    }
+                },
+                "/v1.Backrest/GetConfig": {
+                    description: "Retrieve the Backrest server configuration.",
+                    input: {
+                        type: "none",
+                        example: null // No input required
+                    },
+                    output: {
+                        description: "The configuration object describing the Backrest setup."
+                    }
+                },
+                "/v1.Backrest/SetConfig": {
+                    description: "Update the Backrest server configuration.",
+                    input: {
+                        type: "object",
+                        example: {
+                            "configKey": "configValue"
+                        }
+                    },
+                    output: {
+                        description: "The updated configuration object."
+                    }
+                },
+                "/v1.Backrest/CheckRepoExists": {
+                    description: "Check if a repository exists on the Backrest server.",
+                    input: {
+                        type: "object",
+                        example: {
+                            "id": "repo-id" // Repository identifier
+                        }
+                    },
+                    output: {
+                        description: "Boolean value indicating if the repository exists."
+                    }
+                },
+                "/v1.Backrest/AddRepo": {
+                    description: "Add a new repository to Backrest.",
+                    input: {
+                        type: "object",
+                        example: {
+                            "id": "repo-id",
+                            "path": "/path/to/repo"
+                        }
+                    },
+                    output: {
+                        description: "Updated configuration including the new repository."
+                    }
+                },
+                "/v1.Backrest/GetOperationEvents": {
+                    description: "Stream real-time operation events (created, updated, or deleted).",
+                    input: {
+                        type: "none",
+                        example: null // No input required
+                    },
+                    output: {
+                        description: "Stream of operation events."
+                    }
+                },
+                "/v1.Backrest/ListSnapshots": {
+                    description: "List snapshots for a repository or plan.",
+                    input: {
+                        type: "object",
+                        example: {
+                            "repoId": "repo-id",
+                            "planId": "plan-id" // Optional
+                        }
+                    },
+                    output: {
+                        description: "Array of snapshots including metadata like ID, paths, tags, etc."
+                    }
+                },
+                "/v1.Backrest/ListSnapshotFiles": {
+                    description: "List files within a snapshot at a specific path.",
+                    input: {
+                        type: "object",
+                        example: {
+                            "repoId": "repository-id",
+                            "snapshotId": "snapshot-id",
+                            "path": "target/path"
+                        }
+                    },
+                    output: {
+                        description: "Object containing path queried and an array of file entries (name, type, size, etc.)."
+                    }
+                },
+                "/v1.Backrest/Backup": {
+                    description: "Schedule a backup operation.",
+                    input: {
+                        type: "object",
+                        example: {
+                            "value": "plan-id"
+                        }
+                    },
+                    output: {
+                        description: "No response body, indicates the operation was successfully enqueued."
+                    }
+                },
+                "/v1.Backrest/DoRepoTask": {
+                    description: "Schedule a repository task (e.g., prune, stats).",
+                    input: {
+                        type: "object",
+                        example: {
+                            "repoId": "repo-id",
+                            "task": "TASK_PRUNE"
+                        }
+                    },
+                    output: {
+                        description: "No response body, task successfully enqueued."
+                    }
+                },
+                "/v1.Backrest/Forget": {
+                    description: "Schedule a forget operation for snapshots.",
+                    input: {
+                        type: "object",
+                        example: {
+                            "repoId": "repo-id",
+                            "planId": "plan-id",
+                            "snapshotId": "snap-id" // Optional
+                        }
+                    },
+                    output: {
+                        description: "No response body, operation successfully enqueued."
+                    }
+                },
+                "/v1.Backrest/Restore": {
+                    description: "Schedule a restore operation for a snapshot.",
+                    input: {
+                        type: "object",
+                        example: {
+                            "planId": "plan-id",
+                            "repoId": "repo-id",
+                            "snapshotId": "snapshot-id",
+                            "path": "/source/path",
+                            "target": "/restore/path"
+                        }
+                    },
+                    output: {
+                        description: "No response body, operation successfully enqueued."
+                    }
+                },
+                "/v1.Backrest/Cancel": {
+                    description: "Attempt to cancel an operation by ID.",
+                    input: {
+                        type: "object",
+                        example: {
+                            "value": 12345
+                        }
+                    },
+                    output: {
+                        description: "No response body, operation cancellation requested."
+                    }
+                },
+                "/v1.Backrest/GetLogs": {
+                    description: "Stream logs for a specific operation.",
+                    input: {
+                        type: "object",
+                        example: {
+                            "ref": "operation-ref"
+                        }
+                    },
+                    output: {
+                        description: "Stream of log data for the operation."
+                    }
+                },
+                "/v1.Backrest/RunCommand": {
+                    description: "Execute a custom Restic command on a repository.",
+                    input: {
+                        type: "object",
+                        example: {
+                            "repoId": "repo-id",
+                            "command": "restic-command"
+                        }
+                    },
+                    output: {
+                        description: "Operation ID of the executed command."
+                    }
+                },
+                "/v1.Backrest/GetDownloadURL": {
+                    description: "Retrieve a signed URL for downloading forget operation results.",
+                    input: {
+                        type: "object",
+                        example: {
+                            "value": 12345
+                        }
+                    },
+                    output: {
+                        description: "String containing the signed download URL."
+                    }
+                },
+                "/v1.Backrest/ClearHistory": {
+                    description: "Clear operation history.",
+                    input: {
+                        type: "object",
+                        example: {
+                            "selector": { "planId": "plan-id" },
+                            "onlyFailed": true
+                        }
+                    },
+                    output: {
+                        description: "No response body, history successfully cleared."
+                    }
+                },
+                "/v1.Backrest/PathAutocomplete": {
+                    description: "Autocomplete paths based on the given input.",
+                    input: {
+                        type: "object",
+                        example: {
+                            "value": "/base/path"
+                        }
+                    },
+                    output: {
+                        description: "Array of autocomplete suggestions."
+                    }
+                },
+                "/v1.Backrest/GetSummaryDashboard": {
+                    description: "Retrieve summary data for the dashboard view.",
+                    input: {
+                        type: "none",
+                        example: null
+                    },
+                    output: {
+                        description: "Summary metrics and statistics for the dashboard."
+                    }
+                }
+            };
+
+            // Initialize TypedInput for Input Configuration
+            $("#node-input-input").typedInput({
+                types: ['msg', 'flow', 'global', 'jsonata', 'json']
+            })
+                .typedInput('value', this.inputValue || "payload")
+                .typedInput('type', this.inputType || "msg");
+
+            // Update API details and toggle input config visibility when endpoint changes
+            $("#node-input-endpoint").on("change", updateAPIDescriptionAndToggleInput);
+            updateAPIDescriptionAndToggleInput(); // Initial update on load
+
+            function updateAPIDescriptionAndToggleInput() {
+                const selectedAPI = $("#node-input-endpoint").val();
+                const apiInfo = apiDetails[selectedAPI];
+                if (apiInfo) {
+                    let inputExampleHTML = '';
+                    if (apiInfo.input.type !== "none" && apiInfo.input.example) {
+                        inputExampleHTML = `<pre>${JSON.stringify(apiInfo.input.example, null, 4)}</pre>`;
+                    } else if (apiInfo.input.type === "none") {
+                        inputExampleHTML = `<p><strong>No input required.</strong></p>`;
+                    }
+
+                    $("#selected-api-description").html(`
+                        <p><strong>Description:</strong> ${apiInfo.description}</p>
+                        <div><strong>Input Example:</strong> ${inputExampleHTML}</div>
+                        <div><strong>Output Example:</strong> ${apiInfo.output.description}</div>
+                    `);
+
+                    // Toggle the visibility of the input config row based on input type
+                    if (apiInfo.input.type === "none") {
+                        $("#input-config-row").hide();
+                    } else {
+                        $("#input-config-row").show();
+                    }
+                }
+            }
+        },
+        oneditsave: function () {
+            // Save TypedInput configuration
+            this.inputType = $("#node-input-input").typedInput('type');
+            this.inputValue = $("#node-input-input").typedInput('value');
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="backrest-api">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Node Name" />
+    </div>
+    <div class="form-row">
+        <label for="node-input-config"><i class="fa fa-cog"></i> Backrest Server</label>
+        <input type="text" id="node-input-config" />
+    </div>
+    <div class="form-row">
+        <label for="node-input-endpoint"><i class="fa fa-path"></i> API Endpoint</label>
+        <select id="node-input-endpoint">
+            <option value="/v1.Backrest/GetConfig">Get Config</option>
+            <option value="/v1.Backrest/SetConfig">Set Config</option>
+            <option value="/v1.Backrest/GetOperations">Get Operations</option>
+<!--            <option value="/v1.Backrest/GetOperationEvents">Stream Operation Events</option>-->
+            <option value="/v1.Backrest/ListSnapshots">List Snapshots</option>
+            <option value="/v1.Backrest/ListSnapshotFiles">List Files in Snapshot</option>
+            <option value="/v1.Backrest/Backup">Start Backup</option>
+            <option value="/v1.Backrest/Restore">Restore Snapshot</option>
+            <option value="/v1.Backrest/Forget">Forget Snapshot</option>
+            <option value="/v1.Backrest/DoRepoTask">Run Repository Task</option>
+            <option value="/v1.Backrest/RunCommand">Run Custom Restic Command</option>
+            <option value="/v1.Backrest/Cancel">Cancel Operation</option>
+<!--            <option value="/v1.Backrest/GetLogs">Get Logs</option>-->
+            <option value="/v1.Backrest/GetDownloadURL">Get Download URL</option>
+            <option value="/v1.Backrest/ClearHistory">Clear Operation History</option>
+            <option value="/v1.Backrest/PathAutocomplete">Path Autocomplete</option>
+            <option value="/v1.Backrest/GetSummaryDashboard">Get Summary Dashboard</option>
+            <option value="/v1.Backrest/CheckRepoExists">Check if Repository Exists</option>
+            <option value="/v1.Backrest/AddRepo">Add Repository</option>
+        </select>
+    </div>
+    <div class="form-row" id="input-config-row">
+        <label for="node-input-input"><i class="fa fa-input"></i> Input</label>
+        <input type="text" id="node-input-input" />
+    </div>
+    <div class="form-row" id="api-description">
+        <label><i class="fa fa-info-circle"></i> Selected API Info</label>
+        <div id="selected-api-description" style="margin-top:5px;"></div>
+    </div>
+</script>
