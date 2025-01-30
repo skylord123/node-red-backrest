@@ -1,0 +1,244 @@
+syntax = "proto3";
+
+package v1;
+
+option go_package = "github.com/garethgeorge/backrest/gen/go/v1";
+
+import "google/protobuf/empty.proto";
+import "v1/crypto.proto";
+
+message HubConfig {
+  repeated InstanceInfo instances = 1 [json_name="instances"];
+  
+  message InstanceInfo {
+    string id = 1 [json_name="id"];
+    string secret = 2 [json_name="secret"]; // secret used to authenticate with the hub.
+  }
+}
+
+
+// Config is the top level config object for restic UI.
+message Config {
+  // modification number, used for read-modify-write consistency in the UI. Incremented on every write.
+  int32 modno = 1 [json_name="modno"];
+  int32 version = 6 [json_name="version"]; // version of the config file format. Used to determine when to run migrations.
+
+  // The instance name for the Backrest installation. 
+  // This identifies backups created by this instance and is displayed in the UI. 
+  string instance = 2 [json_name="instance"];
+
+  repeated Repo repos = 3 [json_name="repos"];
+  repeated Plan plans = 4 [json_name="plans"];
+  Auth auth = 5 [json_name="auth"];
+  Multihost multihost = 7 [json_name="sync"];
+}
+
+message Multihost {
+  repeated Peer known_hosts = 1 [json_name="knownHosts"];
+  repeated Peer authorized_clients = 2 [json_name="authorizedClients"];
+
+  message Peer {
+    string instance_id = 1 [json_name="instanceId"]; // instance ID of the peer.
+    PublicKey public_key = 3 [json_name="publicKey"]; // public key of the peer. If changed, the peer must re-verify the public key.
+    bool public_key_verified = 4 [json_name="publicKeyVerified"]; // whether the public key is verified. This must be set for a host to authenticate a client. Clients implicitly validate the first key they see on initial connection.
+
+    // Known host only fields
+    string instance_url = 2 [json_name="instanceUrl"]; // instance URL, required for a known host. Otherwise meaningless.
+  }
+}
+
+message Repo {
+  string id = 1 [json_name="id"]; // unique but human readable ID for this repo.
+  string uri = 2 [json_name="uri"]; // URI of the repo.
+  string guid = 11 [json_name="guid"]; // a globally unique ID for this repo. Should be derived as the 'id' field in `restic cat config --json`.
+  string password = 3 [json_name="password"]; // plaintext password
+  repeated string env = 4 [json_name="env"]; // extra environment variables to set for restic.
+  repeated string flags = 5 [json_name="flags"]; // extra flags set on the restic command.
+  PrunePolicy prune_policy = 6 [json_name="prunePolicy"]; // policy for when to run prune.
+  CheckPolicy check_policy = 9 [json_name="checkPolicy"]; // policy for when to run check.
+  repeated Hook hooks = 7 [json_name="hooks"]; // hooks to run on events for this repo.
+  bool auto_unlock = 8 [json_name="autoUnlock"]; // automatically unlock the repo when needed.
+  bool auto_initialize = 12 [json_name="autoInitialize"]; // whether the repo should be auto-initialized if not found.
+  CommandPrefix command_prefix = 10 [json_name="commandPrefix"]; // modifiers for the restic commands
+  repeated string allowed_peer_instance_ids = 100 [json_name="allowedPeers"]; // list of peer instance IDs allowed to access this repo.
+}
+
+message Plan {
+  string id = 1 [json_name="id"]; // unique but human readable ID for this plan.
+  string repo = 2 [json_name="repo"]; // ID of the repo to use.
+  repeated string paths = 4 [json_name="paths"]; // paths to include in the backup.
+  repeated string excludes = 5 [json_name="excludes"]; // glob patterns to exclude.
+  repeated string iexcludes = 9 [json_name="iexcludes"]; // case insensitive glob patterns to exclude.
+  Schedule schedule = 12 [json_name="schedule"]; // schedule for the backup.
+  RetentionPolicy retention = 7 [json_name="retention"]; // retention policy for snapshots.
+  repeated Hook hooks = 8 [json_name="hooks"]; // hooks to run on events for this plan.
+  repeated string backup_flags = 10 [json_name="backup_flags"]; // extra flags to set when running a backup command.
+  bool skip_if_unchanged = 13 [json_name="skipIfUnchanged"]; // skip the backup if no changes are detected.
+  reserved 3, 6, 11; // deprecated
+}
+
+message CommandPrefix {
+  enum IONiceLevel {
+    IO_DEFAULT = 0;
+    IO_BEST_EFFORT_LOW = 1;
+    IO_BEST_EFFORT_HIGH = 2;
+    IO_IDLE = 3;
+  }
+
+  enum CPUNiceLevel {
+    CPU_DEFAULT = 0;
+    CPU_HIGH = 1;
+    CPU_LOW = 2;
+  }
+
+  IONiceLevel io_nice = 1 [json_name="ioNice"]; // ionice level to set.
+  CPUNiceLevel cpu_nice = 2 [json_name="cpuNice"]; // nice level to set.
+}
+
+message RetentionPolicy {
+  oneof policy {
+    int32 policy_keep_last_n = 10 [json_name="policyKeepLastN"];
+    TimeBucketedCounts policy_time_bucketed = 11 [json_name="policyTimeBucketed"];
+    bool policy_keep_all = 12 [json_name="policyKeepAll"];
+  }
+
+  message TimeBucketedCounts {
+    int32 hourly = 1 [json_name="hourly"]; // keep the last n hourly snapshots.
+    int32 daily = 2 [json_name="daily"]; // keep the last n daily snapshots.
+    int32 weekly = 3 [json_name="weekly"]; // keep the last n weekly snapshots.
+    int32 monthly = 4 [json_name="monthly"]; // keep the last n monthly snapshots.
+    int32 yearly = 5 [json_name="yearly"];  // keep the last n yearly snapshots.
+  }
+}
+
+message PrunePolicy {
+  Schedule schedule = 2 [json_name="schedule"];
+  int64 max_unused_bytes = 3 [json_name="maxUnusedBytes"]; // max unused bytes before running prune.
+  double max_unused_percent = 4 [json_name="maxUnusedPercent"]; // max unused percent before running prune.
+}
+
+message CheckPolicy {
+  Schedule schedule = 1 [json_name="schedule"];
+  
+  oneof mode {
+    bool structure_only = 100 [json_name="structureOnly"]; // only check the structure of the repo. No pack data is read.
+    double read_data_subset_percent = 101 [json_name="readDataSubsetPercent"]; // check a percentage of pack data.
+  }
+}
+
+message Schedule {
+  oneof schedule {
+    bool disabled = 1 [json_name="disabled"]; // disable the schedule.
+    string cron = 2 [json_name="cron"]; // cron expression describing the schedule.
+    int32 maxFrequencyDays = 3 [json_name="maxFrequencyDays"]; // max frequency of runs in days.
+    int32 maxFrequencyHours = 4 [json_name="maxFrequencyHours"]; // max frequency of runs in hours.
+  }
+
+  enum Clock {
+    CLOCK_DEFAULT = 0; // same as CLOCK_LOCAL
+    CLOCK_LOCAL = 1;
+    CLOCK_UTC = 2;
+    CLOCK_LAST_RUN_TIME = 3;
+  }
+
+  Clock clock = 5 [json_name="clock"]; // clock to use for scheduling.
+}
+
+message Hook {
+  enum Condition {
+    CONDITION_UNKNOWN = 0;
+    CONDITION_ANY_ERROR = 1; // error running any operation.
+    CONDITION_SNAPSHOT_START = 2; // backup started.
+    CONDITION_SNAPSHOT_END = 3; // backup completed (success or fail).
+    CONDITION_SNAPSHOT_ERROR = 4; // snapshot failed.
+    CONDITION_SNAPSHOT_WARNING = 5; // snapshot completed with warnings.
+    CONDITION_SNAPSHOT_SUCCESS = 6; // snapshot succeeded.
+    CONDITION_SNAPSHOT_SKIPPED = 7; // snapshot was skipped e.g. due to no changes.
+    
+    // prune conditions
+    CONDITION_PRUNE_START = 100; // prune started.
+    CONDITION_PRUNE_ERROR = 101; // prune failed.
+    CONDITION_PRUNE_SUCCESS = 102; // prune succeeded.
+
+    // check conditions
+    CONDITION_CHECK_START = 200; // check started.
+    CONDITION_CHECK_ERROR = 201; // check failed.
+    CONDITION_CHECK_SUCCESS = 202; // check succeeded.
+  }
+
+  enum OnError {
+    ON_ERROR_IGNORE = 0;
+    ON_ERROR_CANCEL = 1; // cancels the operation and skips subsequent hooks
+    ON_ERROR_FATAL = 2; // fails the operation and subsequent hooks.
+    ON_ERROR_RETRY_1MINUTE = 100; // retry the operation every minute 
+    ON_ERROR_RETRY_10MINUTES = 101; // retry the operation every 10 minutes
+    ON_ERROR_RETRY_EXPONENTIAL_BACKOFF = 103; // retry the operation with exponential backoff up to 1h max.
+  }
+
+  repeated Condition conditions = 1 [json_name="conditions"];
+  OnError on_error = 2 [json_name="onError"];
+
+  oneof action {
+    Command action_command = 100 [json_name="actionCommand"];
+    Webhook action_webhook = 101 [json_name="actionWebhook"];
+    Discord action_discord = 102 [json_name="actionDiscord"];
+    Gotify action_gotify = 103 [json_name="actionGotify"];
+    Slack action_slack = 104 [json_name="actionSlack"];
+    Shoutrrr action_shoutrrr = 105 [json_name="actionShoutrrr"];
+    Healthchecks action_healthchecks = 106 [json_name="actionHealthchecks"];
+  }
+
+  message Command {
+    string command = 1 [json_name="command"];
+  }
+
+  message Webhook {
+    string webhook_url = 1 [json_name="webhookUrl"];
+    enum Method {
+      UNKNOWN = 0;
+      GET = 1;
+      POST = 2;
+    }
+    Method method = 2 [json_name="method"];
+    string template = 100 [json_name="template"];
+  }
+
+  message Discord {
+    string webhook_url = 1 [json_name="webhookUrl"];
+    string template = 2 [json_name="template"]; // template for the webhook payload.
+  }
+
+  message Gotify {
+    string base_url = 1 [json_name="baseUrl"];
+    string token = 3 [json_name="token"];
+    string template = 100 [json_name="template"]; // template for the webhook payload.
+    string title_template = 101 [json_name="titleTemplate"]; // template for the webhook title.
+  }
+
+  message Slack {
+    string webhook_url = 1 [json_name="webhookUrl"];
+    string template = 2 [json_name="template"]; // template for the webhook payload.
+  }
+
+  message Shoutrrr {
+    string shoutrrr_url = 1 [json_name="shoutrrrUrl"];
+    string template = 2 [json_name="template"];
+  }
+
+  message Healthchecks {
+    string webhook_url = 1 [json_name="webhookUrl"];
+    string template = 2 [json_name="template"];
+  }
+}
+
+message Auth {
+  bool disabled = 1 [json_name="disabled"]; // disable authentication.
+  repeated User users = 2 [json_name="users"]; // users to allow access to the UI.
+}
+
+message User {
+  string name = 1 [json_name="name"];
+  oneof password {
+    string password_bcrypt = 2 [json_name="passwordBcrypt"];
+  }
+}

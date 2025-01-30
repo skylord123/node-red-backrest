@@ -16,10 +16,13 @@
   "node-red": {
     "nodes": {
       "backrest-config": "backrest-config.js",
-      "backrest-api": "backrest-api.js"
+      "backrest-api": "backrest-api.js",
+      "backrest-api-stream": "backrest-api-stream.js"
     }
   },
   "dependencies": {
+    "@grpc/grpc-js": "^1.12.5",
+    "@grpc/proto-loader": "^0.7.13",
     "axios": "^1.7.9"
   }
 }

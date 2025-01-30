@@ -1,0 +1,211 @@
+<script type="text/javascript">
+    RED.nodes.registerType('backrest-api-stream', {
+        category: 'backrest',
+        color: "#e2d96e",
+        defaults: {
+            name: { value: "" },
+            config: { type: "backrest-config", required: true },
+            streamMethod: { value: "GetLogs", required: true },
+            listenType: { value: "msg", required: true },
+            listenValue: { value: "payload", required: true },
+            logRefType: { value: "msg", required: false },
+            logRefValue: { value: "logRef", required: false },
+            autoReconnect: { value: false, required: false },
+
+            // Here are your existing typed-values
+            reconnectInterval: { value: "5000", required: false },
+            reconnectTries: { value: "5", required: false },
+
+            // Add these two lines to store/restore the selected "type":
+            reconnectIntervalType: { value: "num", required: false },
+            reconnectTriesType: { value: "num", required: false }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "node-red-contrib-backrest-logo.png",
+        paletteLabel: function () {
+            return 'Backrest API Stream';
+        },
+        label: function () {
+            if(this.name) return this.name;
+
+            if(this.streamMethod) {
+                switch(this.streamMethod) {
+                    case 'GetOperationEvents': return 'Stream Operation Events';
+                    case 'GetLogs': return 'Stream Logs';
+                }
+            }
+
+            return "Backrest API Stream";
+        },
+        oneditprepare: function () {
+            // Initialize the typed input for "Listen?" (start/stop streaming)
+            $("#node-input-listenValue").typedInput({
+                default: "msg",
+                types: ["msg","flow","global","jsonata","json","str","bool","num"],
+                typeField: "#node-input-listenType"
+            });
+            // Restore previously saved type/value
+            $("#node-input-listenValue").typedInput("type", this.listenType || "msg");
+            $("#node-input-listenValue").typedInput("value", this.listenValue || "payload");
+
+            // Initialize the typed input for the Log Reference
+            $("#node-input-logRefValue").typedInput({
+                default: "msg",
+                types: ["msg","flow","global","jsonata","json","str","bool","num"],
+                typeField: "#node-input-logRefType"
+            });
+            // Restore previously saved type/value
+            $("#node-input-logRefValue").typedInput("type", this.logRefType || "msg");
+            $("#node-input-logRefValue").typedInput("value", this.logRefValue || "logRef");
+
+            // Initialize the typed inputs for Auto Reconnect options
+            $("#node-input-reconnectInterval").typedInput({
+                default: "5000",
+                types: ["msg","flow","global","jsonata","json","str","num"],
+                typeField: "#node-input-reconnectIntervalType"
+            });
+            $("#node-input-reconnectInterval").typedInput({
+                default: "num",
+                types: ["msg","flow","global","jsonata","json","str","num"],
+                typeField: "#node-input-reconnectIntervalType"
+            });
+            $("#node-input-reconnectInterval").typedInput("type", this.reconnectIntervalType || "num");
+            $("#node-input-reconnectInterval").typedInput("value", this.reconnectInterval || "5000");
+
+            $("#node-input-reconnectTries").typedInput({
+                default: "num",
+                types: ["msg","flow","global","jsonata","json","str","num"],
+                typeField: "#node-input-reconnectTriesType"
+            });
+            $("#node-input-reconnectTries").typedInput("type", this.reconnectTriesType || "num");
+            $("#node-input-reconnectTries").typedInput("value", this.reconnectTries || "5");
+
+
+            // Toggle the Log Ref row depending on chosen method
+            function toggleLogRefRow() {
+                const method = $("#node-input-streamMethod").val();
+                if (method === "GetLogs") {
+                    $("#node-input-logref-row").show();
+                } else {
+                    $("#node-input-logref-row").hide();
+                }
+            }
+            $("#node-input-streamMethod").on("change", toggleLogRefRow);
+            toggleLogRefRow();
+
+            // Toggle the Reconnect Settings visibility based on Auto Reconnect checkbox and streaming method
+            function toggleReconnectSettings() {
+                const autoReconnect = $("#node-input-autoReconnect").is(":checked");
+                const method = $("#node-input-streamMethod").val();
+                if (autoReconnect && method === "GetOperationEvents") {
+                    $("#reconnect-settings-row").show();
+                    $("#reconnect-tries-row").show();
+                } else {
+                    $("#reconnect-settings-row").hide();
+                    $("#reconnect-tries-row").hide();
+                }
+            }
+            $("#node-input-autoReconnect").on("change", toggleReconnectSettings);
+            $("#node-input-streamMethod").on("change", toggleReconnectSettings); // Recheck when method changes
+            toggleReconnectSettings();
+        },
+        oneditsave: function () {
+            // Persist the typed input settings
+            this.listenType = $("#node-input-listenValue").typedInput("type");
+            this.listenValue = $("#node-input-listenValue").typedInput("value");
+
+            this.logRefType = $("#node-input-logRefValue").typedInput("type");
+            this.logRefValue = $("#node-input-logRefValue").typedInput("value");
+
+            this.reconnectIntervalType = $("#node-input-reconnectInterval").typedInput("type");
+            this.reconnectInterval = $("#node-input-reconnectInterval").typedInput("value");
+
+            this.reconnectTriesType = $("#node-input-reconnectTries").typedInput("type");
+            this.reconnectTries = $("#node-input-reconnectTries").typedInput("value");
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="backrest-api-stream">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name" placeholder="Node Name" />
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-config"><i class="fa fa-cog"></i> Backrest Server</label>
+        <input type="text" id="node-input-config" />
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-streamMethod"><i class="fa fa-list"></i> Streaming Method</label>
+        <select id="node-input-streamMethod">
+            <option value="GetLogs">GetLogs</option>
+            <option value="GetOperationEvents">GetOperationEvents</option>
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-listenValue"><i class="fa fa-play"></i> Start Listening?</label>
+        <input type="text" id="node-input-listenValue" style="width: 60%;" />
+        <!-- Hidden field to store the typed input's selected type -->
+        <input type="hidden" id="node-input-listenType" />
+        <div style="margin-left:5px;">
+            <small>Must evaluate to <strong>true</strong> to start streaming, <strong>false</strong> to stop.</small>
+        </div>
+    </div>
+
+    <!-- The typed input for 'Log Reference' (only relevant if GetLogs is chosen) -->
+    <div class="form-row" id="node-input-logref-row">
+        <label for="node-input-logRefValue"><i class="fa fa-file-text-o"></i> Log Reference</label>
+        <input type="text" id="node-input-logRefValue" style="width: 60%;" />
+        <!-- Hidden field to store the typed input's selected type -->
+        <input type="hidden" id="node-input-logRefType" />
+        <div style="margin-left:5px;">
+            <small>Used only for "GetLogs" streaming.</small>
+        </div>
+    </div>
+
+    <!-- Auto Reconnect Checkbox (only visible for GetOperationEvents) -->
+    <div class="form-row">
+        <label for="node-input-autoReconnect"><i class="fa fa-refresh"></i> Auto Reconnect</label>
+        <input type="checkbox" id="node-input-autoReconnect" />
+        <div style="margin-left:5px;">
+            <small>If enabled, the node will attempt to reconnect on unexpected disconnections.</small>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-given_port_only"><i class="fa fa-lock"></i> Lock port</label>
+        <input
+                type="checkbox"
+                id="node-input-given_port_only"
+                style="width: auto; vertical-align: top"
+        />
+        <span>
+            Only attempt to query server on given port (default: false).
+        </span>
+    </div>
+
+    <!-- Reconnect Settings (visible only if Auto Reconnect is enabled and method is GetOperationEvents) -->
+    <div class="form-row" id="reconnect-settings-row" style="display: none;">
+        <label for="node-input-reconnectInterval"><i class="fa fa-clock-o"></i> Reconnect Interval (ms)</label>
+        <input type="text" id="node-input-reconnectInterval" style="width: 60%;" />
+        <!-- Hidden field to store the typed input's selected type -->
+        <input type="hidden" id="node-input-reconnectIntervalType" />
+        <div style="margin-left:5px;">
+            <small>Time to wait before attempting to reconnect (in milliseconds).</small>
+        </div>
+    </div>
+
+    <div class="form-row" id="reconnect-tries-row" style="display: none;">
+        <label for="node-input-reconnectTries"><i class="fa fa-tasks"></i> Reconnect Attempts</label>
+        <input type="text" id="node-input-reconnectTries" style="width: 60%;" />
+        <!-- Hidden field to store the typed input's selected type -->
+        <input type="hidden" id="node-input-reconnectTriesType" />
+        <div style="margin-left:5px;">
+            <small>Number of reconnection attempts before giving up. Set to <strong>0</strong> for infinite attempts.</small>
+        </div>
+    </div>
+</script>\

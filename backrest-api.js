@@ -316,11 +316,12 @@ module.exports = function (RED) {
                         if (done) done();
                     })
                     .catch(error => {
-                        const status = error.response?.status || 'N/A';
-                        const responseData = error.response?.data ? JSON.stringify(error.response.data) : 'No response data';
-                        const errorMessage = error.message || 'Unknown error';
-
-                        node.error(`Request failed - Status: ${status}, Response: ${responseData}, Message: ${errorMessage}`);
+                        const errorDetails = {
+                            status: error.response?.status || 'N/A',
+                            data: error.response?.data ? JSON.stringify(error.response.data) : 'No response data',
+                            message: error.message || 'Unknown error'
+                        };
+                        node.error(`Request failed - ${JSON.stringify(errorDetails)}`);
                         if (done) done(error);
                     });
             };

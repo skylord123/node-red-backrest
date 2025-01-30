@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package types;
+
+option go_package = "github.com/garethgeorge/backrest/gen/go/types";
+
+message BoolValue {
+  bool value = 1;
+}
+
+message StringValue {
+  string value = 1;
+}
+
+message BytesValue {
+  bytes value = 1;
+}
+
+message StringList {
+  repeated string values = 1;
+}
+
+message Int64Value {
+  int64 value = 1;
+}
+
+message Int64List {
+  repeated int64 values = 1;
+}
+
+message Empty {}
