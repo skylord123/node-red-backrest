@@ -11,7 +11,7 @@ module.exports = function (RED) {
             return;
         }
 
-        const baseURL = `http://${serverConfig.host}:${serverConfig.port}`;
+        const baseURL = serverConfig.backrest_url || '';
         const username = serverConfig.credentials.username || '';
         const password = serverConfig.credentials.password || '';
 
@@ -302,8 +302,9 @@ module.exports = function (RED) {
                     'Content-Type': 'application/json'
                 };
 
+                const url = `${baseURL}${endpoint}`;
                 axios.post(
-                    `${baseURL}${endpoint}`,
+                    url,
                     payload,
                     {
                         headers,
@@ -318,6 +319,7 @@ module.exports = function (RED) {
                     .catch(error => {
                         const errorDetails = {
                             status: error.response?.status || 'N/A',
+                            url: url,
                             data: error.response?.data ? JSON.stringify(error.response.data) : 'No response data',
                             message: error.message || 'Unknown error'
                         };

@@ -1,7 +1,7 @@
 {
   "name": "@skylord123/node-red-contrib-backrest",
   "version": "0.0.1",
-  "description": "Query Backrest API from Node-RED",
+  "description": "Node-RED nodes for interacting with Backrest, a restic-powered backup management tool.",
   "main": "backrest-config.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1"

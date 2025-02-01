@@ -2,15 +2,15 @@
     RED.nodes.registerType('backrest-config', {
         category: 'config',
         defaults: {
-            host: { value: '' },
-            port: { value: 9898 }
+            name: { value: '' }
         },
         credentials: {
+            backrest_url: { type: 'text' },
             username: { type: 'text' },
             password: { type: 'password' }
         },
         label: function() {
-            return this.host + ':' + this.port;
+            return this.name || this.id;
         }
     });
 </script>
@@ -21,19 +21,15 @@
         <input type="text" id="node-config-input-name" placeholder="Name">
     </div>
     <div class="form-row">
-        <label for="node-config-input-host"><i class="fa fa-server"></i> Host</label>
-        <input type="text" id="node-config-input-host" placeholder="localhost" />
+        <label for="node-config-input-backrest_url"><i class="fa fa-server"></i> Backrest URL</label>
+        <input type="text" id="node-config-input-backrest_url" placeholder="http://localhost:9898" />
     </div>
     <div class="form-row">
-        <label for="node-config-input-port"><i class="fa fa-forward"></i> Port</label>
-        <input type="text" id="node-config-input-port" placeholder="9898" />
+        <label for="node-config-input-username"><i class="fa fa-user"></i> Username</label>
+        <input type="text" id="node-config-input-username" placeholder="" />
     </div>
     <div class="form-row">
-        <label for="node-config-username"><i class="fa fa-user"></i> Username</label>
-        <input type="text" id="node-config-username" placeholder="" />
-    </div>
-    <div class="form-row">
-        <label for="node-config-password"><i class="fa fa-lock"></i> Password</label>
-        <input type="password" id="node-config-password" placeholder="" />
+        <label for="node-config-input-password"><i class="fa fa-lock"></i> Password</label>
+        <input type="password" id="node-config-input-password" placeholder="" />
     </div>
 </script>
