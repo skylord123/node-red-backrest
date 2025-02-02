@@ -1,7 +1,7 @@
 Examples
 ---
 
-In the future this page will contain a list of examples but for now we just have a main master one I am using to develop this module.
+Here is the flow I currently use for developing this module. It showcases how you can do various different tasks.
 
 You can import the example JSON here (copy the full page and import using hamburger menu in Node-RED):
 

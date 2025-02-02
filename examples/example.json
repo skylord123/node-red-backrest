@@ -12,9 +12,9 @@
       "acd107e6aa8c8012",
       "5fd39c155ca3f4a9"
     ],
-    "x": 154,
+    "x": 74,
     "y": 139,
-    "w": 532,
+    "w": 492,
     "h": 82
   },
   {
@@ -27,7 +27,7 @@
     "endpoint": "/v1.Backrest/GetConfig",
     "inputType": "msg",
     "inputValue": "payload",
-    "x": 420,
+    "x": 330,
     "y": 180,
     "wires": [
       [
@@ -41,19 +41,13 @@
     "z": "d77c64c1bdc91473",
     "g": "51299584e1fca240",
     "name": "",
-    "props": [
-      {
-        "p": "payload"
-      }
-    ],
+    "props": [],
     "repeat": "",
     "crontab": "",
     "once": false,
     "onceDelay": 0.1,
     "topic": "",
-    "payload": "{\"lastN\": 1000, \"selector\": {\"repoId\": \"my-repo-id\"}}",
-    "payloadType": "json",
-    "x": 250,
+    "x": 170,
     "y": 180,
     "wires": [
       [
@@ -75,15 +69,17 @@
     "targetType": "full",
     "statusVal": "",
     "statusType": "auto",
-    "x": 590,
+    "x": 470,
     "y": 180,
     "wires": []
   },
   {
     "id": "06bd2857df140cc4",
     "type": "backrest-config",
-    "host": "127.0.0.1",
-    "port": "9898"
+    "name": "Example",
+    "autoReconnect": true,
+    "reconnectInterval": "1000",
+    "reconnectTries": "0"
   },
   {
     "id": "30e4bb3cc02c93dc",
@@ -100,9 +96,9 @@
       "e4fcc6879f47f07b",
       "cb1d42a3dac3286b"
     ],
-    "x": 154,
-    "y": 259,
-    "w": 892,
+    "x": 74,
+    "y": 479,
+    "w": 792,
     "h": 82
   },
   {
@@ -115,8 +111,8 @@
     "endpoint": "/v1.Backrest/GetOperations",
     "inputType": "jsonata",
     "inputValue": "{\t   \"lastN\": 1000,\t    \"selector\": {\t       \"repoId\": repo.id\t    }\t}\t",
-    "x": 780,
-    "y": 300,
+    "x": 620,
+    "y": 520,
     "wires": [
       [
         "1900e3107f58437e"
@@ -129,20 +125,14 @@
     "z": "d77c64c1bdc91473",
     "g": "30e4bb3cc02c93dc",
     "name": "",
-    "props": [
-      {
-        "p": "payload"
-      }
-    ],
+    "props": [],
     "repeat": "",
     "crontab": "",
     "once": false,
     "onceDelay": 0.1,
     "topic": "",
-    "payload": "{\"lastN\": 1000, \"selector\": {\"repoId\": \"my-repo-id\"}}",
-    "payloadType": "json",
-    "x": 250,
-    "y": 300,
+    "x": 170,
+    "y": 520,
     "wires": [
       [
         "e4fcc6879f47f07b"
@@ -163,8 +153,8 @@
     "targetType": "full",
     "statusVal": "",
     "statusType": "auto",
-    "x": 950,
-    "y": 300,
+    "x": 770,
+    "y": 520,
     "wires": []
   },
   {
@@ -177,8 +167,8 @@
     "endpoint": "/v1.Backrest/GetConfig",
     "inputType": "msg",
     "inputValue": "payload",
-    "x": 440,
-    "y": 300,
+    "x": 330,
+    "y": 520,
     "wires": [
       [
         "cb1d42a3dac3286b"
@@ -193,15 +183,1101 @@
     "name": "split",
     "func": "// Configurable values\nconst sourceProperty = \"payload.repos\"; // Property to split on\nconst targetProperty = \"repo\"; // Property to set split values to\n\n// Fetch the array or string to split\nconst sourceValue = RED.util.getMessageProperty(msg, sourceProperty);\n\nif (!Array.isArray(sourceValue) && typeof sourceValue !== \"string\") {\n    node.error(\"Source property must be an array or string to split.\", msg);\n    return null; // Halt further processing\n}\n\n// Prepare the new messages array\nconst messages = [];\n\n// Iterate over the source value\nfor (const item of sourceValue) {\n    // Clone the original message to avoid modifying the input\n    const newMsg = RED.util.cloneMessage(msg);\n\n    // Set the target property with the split value\n    RED.util.setMessageProperty(newMsg, targetProperty, item, true);\n\n    // Push the new message to the array\n    messages.push(newMsg);\n}\n\n// Send the new messages as an array\nreturn [messages];",
     "outputs": 1,
+    "timeout": "",
     "noerr": 0,
     "initialize": "",
     "finalize": "",
     "libs": [],
-    "x": 610,
-    "y": 300,
+    "x": 470,
+    "y": 520,
     "wires": [
       [
         "d15bd4cb18b5c25b"
+      ]
+    ]
+  },
+  {
+    "id": "bce963ca7aff586a",
+    "type": "group",
+    "z": "d77c64c1bdc91473",
+    "name": "Backrest - Get operations grouped by flow for first repo",
+    "style": {
+      "label": true
+    },
+    "nodes": [
+      "bf9b19faad0cefad",
+      "e9ac8c21e3af7c8d",
+      "caaf64f7e32c307e",
+      "d7812122bcf1debf",
+      "28e2cce914f7f25c",
+      "6f730317474a9c7f"
+    ],
+    "x": 74,
+    "y": 579,
+    "w": 1112,
+    "h": 82
+  },
+  {
+    "id": "bf9b19faad0cefad",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "bce963ca7aff586a",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/GetOperations",
+    "inputType": "jsonata",
+    "inputValue": "{\t    \"lastN\": 25,\t    \"selector\": {\t        \"repoId\": plan.repo,\t        \"planId\": plan.id\t    }\t}",
+    "x": 680,
+    "y": 620,
+    "wires": [
+      [
+        "28e2cce914f7f25c"
+      ]
+    ]
+  },
+  {
+    "id": "e9ac8c21e3af7c8d",
+    "type": "inject",
+    "z": "d77c64c1bdc91473",
+    "g": "bce963ca7aff586a",
+    "name": "",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "x": 170,
+    "y": 620,
+    "wires": [
+      [
+        "caaf64f7e32c307e"
+      ]
+    ]
+  },
+  {
+    "id": "caaf64f7e32c307e",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "bce963ca7aff586a",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/GetConfig",
+    "inputType": "msg",
+    "inputValue": "payload",
+    "x": 330,
+    "y": 620,
+    "wires": [
+      [
+        "d7812122bcf1debf"
+      ]
+    ]
+  },
+  {
+    "id": "d7812122bcf1debf",
+    "type": "change",
+    "z": "d77c64c1bdc91473",
+    "g": "bce963ca7aff586a",
+    "name": "",
+    "rules": [
+      {
+        "t": "set",
+        "p": "plan",
+        "pt": "msg",
+        "to": "payload.plans[0]",
+        "tot": "msg",
+        "dc": true
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 500,
+    "y": 620,
+    "wires": [
+      [
+        "bf9b19faad0cefad"
+      ]
+    ]
+  },
+  {
+    "id": "28e2cce914f7f25c",
+    "type": "function",
+    "z": "d77c64c1bdc91473",
+    "g": "bce963ca7aff586a",
+    "name": "Group operations by flowId",
+    "func": "/**\n * Groups and sorts operations by flowId\n * @param {Array} operations - Array of operation objects\n * @returns {Object} Grouped operations by flowId, sorted by start time\n */\nconst groupOperationsByFlow = (operations) => {\n    if (!Array.isArray(operations)) {\n        throw new Error('Operations must be an array');\n    }\n\n    return operations.reduce((groups, operation) => {\n        const { flowId } = operation;\n\n        if (!flowId) {\n            return groups;\n        }\n\n        if (!groups[flowId]) {\n            groups[flowId] = [];\n        }\n\n        groups[flowId].push(operation);\n\n        // Sort operations within each group by start time\n        groups[flowId].sort((a, b) => {\n            const timeA = Number(a.unixTimeStartMs);\n            const timeB = Number(b.unixTimeStartMs);\n            return timeB - timeA;  // Descending order (latest first)\n        });\n\n        return groups;\n    }, {});\n};\n\n// Get operations from the payload\ntry {\n    const { operations } = msg.payload;\n\n    if (!operations?.length) {\n        node.error('No operations found in payload');\n        return null;\n    }\n\n    msg.payload = groupOperationsByFlow(operations);\n    return msg;\n\n} catch (error) {\n    node.error(`Error processing operations: ${error.message}`);\n    return null;\n}",
+    "outputs": 1,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 900,
+    "y": 620,
+    "wires": [
+      [
+        "6f730317474a9c7f"
+      ]
+    ]
+  },
+  {
+    "id": "6f730317474a9c7f",
+    "type": "debug",
+    "z": "d77c64c1bdc91473",
+    "g": "bce963ca7aff586a",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1090,
+    "y": 620,
+    "wires": []
+  },
+  {
+    "id": "c6a980b68674e6cf",
+    "type": "group",
+    "z": "d77c64c1bdc91473",
+    "name": "Backrest - Get dashboard summary",
+    "style": {
+      "label": true
+    },
+    "nodes": [
+      "fd31b8e91ccae6c7",
+      "6e240bee21dd7cdf",
+      "8664958b6d2ef28a"
+    ],
+    "x": 74,
+    "y": 39,
+    "w": 592,
+    "h": 82
+  },
+  {
+    "id": "fd31b8e91ccae6c7",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "c6a980b68674e6cf",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/GetSummaryDashboard",
+    "inputType": "jsonata",
+    "inputValue": "{\t    \"repoId\": \"repository-id\",\t    \"snapshotId\": snapshot,\t    \"path\": plan.paths[0]\t}",
+    "x": 370,
+    "y": 80,
+    "wires": [
+      [
+        "8664958b6d2ef28a"
+      ]
+    ]
+  },
+  {
+    "id": "6e240bee21dd7cdf",
+    "type": "inject",
+    "z": "d77c64c1bdc91473",
+    "g": "c6a980b68674e6cf",
+    "name": "",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "x": 170,
+    "y": 80,
+    "wires": [
+      [
+        "fd31b8e91ccae6c7"
+      ]
+    ]
+  },
+  {
+    "id": "8664958b6d2ef28a",
+    "type": "debug",
+    "z": "d77c64c1bdc91473",
+    "g": "c6a980b68674e6cf",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 570,
+    "y": 80,
+    "wires": []
+  },
+  {
+    "id": "6ec1393e5e1e912f",
+    "type": "group",
+    "z": "d77c64c1bdc91473",
+    "name": "Backrest - Start backup",
+    "style": {
+      "label": true
+    },
+    "nodes": [
+      "7ae1b8328f121261",
+      "7fb79d2c7f1c1501",
+      "2fc856babec89429",
+      "ae53a4a7c3f38a20"
+    ],
+    "x": 74,
+    "y": 239,
+    "w": 652,
+    "h": 82
+  },
+  {
+    "id": "7ae1b8328f121261",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "6ec1393e5e1e912f",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/Backup",
+    "inputType": "jsonata",
+    "inputValue": "{\t    \"value\": payload.plans[$$.repo_index].id\t}\t",
+    "x": 490,
+    "y": 280,
+    "wires": [
+      [
+        "2fc856babec89429"
+      ]
+    ]
+  },
+  {
+    "id": "7fb79d2c7f1c1501",
+    "type": "inject",
+    "z": "d77c64c1bdc91473",
+    "g": "6ec1393e5e1e912f",
+    "name": "",
+    "props": [
+      {
+        "p": "repo_index",
+        "v": "2",
+        "vt": "num"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "x": 170,
+    "y": 280,
+    "wires": [
+      [
+        "ae53a4a7c3f38a20"
+      ]
+    ]
+  },
+  {
+    "id": "2fc856babec89429",
+    "type": "debug",
+    "z": "d77c64c1bdc91473",
+    "g": "6ec1393e5e1e912f",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 630,
+    "y": 280,
+    "wires": []
+  },
+  {
+    "id": "ae53a4a7c3f38a20",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "6ec1393e5e1e912f",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/GetConfig",
+    "inputType": "msg",
+    "inputValue": "payload",
+    "x": 330,
+    "y": 280,
+    "wires": [
+      [
+        "7ae1b8328f121261"
+      ]
+    ]
+  },
+  {
+    "id": "7083a88797dd4e2a",
+    "type": "group",
+    "z": "d77c64c1bdc91473",
+    "name": "Backrest - Run restic help command for first repo and return output",
+    "style": {
+      "label": true
+    },
+    "nodes": [
+      "490ad15e3a743547",
+      "1c20203ed8e2edb6",
+      "254272eb690c2c48",
+      "e814b7f50379c507",
+      "21e947dabdc02c3c",
+      "5f17019366bc74ab",
+      "fed72d54b1e7b9ee"
+    ],
+    "x": 74,
+    "y": 679,
+    "w": 1272,
+    "h": 82
+  },
+  {
+    "id": "490ad15e3a743547",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "7083a88797dd4e2a",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/RunCommand",
+    "inputType": "jsonata",
+    "inputValue": "{\t    \"repoId\": plan.repo,\t    \"command\": \"help\"\t}",
+    "x": 730,
+    "y": 720,
+    "wires": [
+      [
+        "5f17019366bc74ab"
+      ]
+    ]
+  },
+  {
+    "id": "1c20203ed8e2edb6",
+    "type": "inject",
+    "z": "d77c64c1bdc91473",
+    "g": "7083a88797dd4e2a",
+    "name": "",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "x": 170,
+    "y": 720,
+    "wires": [
+      [
+        "e814b7f50379c507"
+      ]
+    ]
+  },
+  {
+    "id": "254272eb690c2c48",
+    "type": "debug",
+    "z": "d77c64c1bdc91473",
+    "g": "7083a88797dd4e2a",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1250,
+    "y": 720,
+    "wires": []
+  },
+  {
+    "id": "e814b7f50379c507",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "7083a88797dd4e2a",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/GetConfig",
+    "inputType": "msg",
+    "inputValue": "payload",
+    "x": 330,
+    "y": 720,
+    "wires": [
+      [
+        "21e947dabdc02c3c"
+      ]
+    ]
+  },
+  {
+    "id": "21e947dabdc02c3c",
+    "type": "change",
+    "z": "d77c64c1bdc91473",
+    "g": "7083a88797dd4e2a",
+    "name": "",
+    "rules": [
+      {
+        "t": "set",
+        "p": "plan",
+        "pt": "msg",
+        "to": "payload.plans[0]",
+        "tot": "msg",
+        "dc": true
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 500,
+    "y": 720,
+    "wires": [
+      [
+        "490ad15e3a743547"
+      ]
+    ]
+  },
+  {
+    "id": "5f17019366bc74ab",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "7083a88797dd4e2a",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/GetOperations",
+    "inputType": "jsonata",
+    "inputValue": "{\t  \"selector\": {\t    \"ids\": [ payload.value ]\t  }\t}",
+    "x": 960,
+    "y": 720,
+    "wires": [
+      [
+        "fed72d54b1e7b9ee"
+      ]
+    ]
+  },
+  {
+    "id": "fed72d54b1e7b9ee",
+    "type": "backrest-get-logs",
+    "z": "d77c64c1bdc91473",
+    "g": "7083a88797dd4e2a",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "listenValue": "true",
+    "listenType": "bool",
+    "logRefValue": "payload.operations[0].operationRunCommand.outputLogref",
+    "logRefType": "jsonata",
+    "x": 1120,
+    "y": 720,
+    "wires": [
+      [
+        "254272eb690c2c48"
+      ]
+    ]
+  },
+  {
+    "id": "fe6a01b5933a0e30",
+    "type": "group",
+    "z": "d77c64c1bdc91473",
+    "name": "Backrest - Start/Stop streaming OperationEvents",
+    "style": {
+      "label": true
+    },
+    "nodes": [
+      "4a4ab62c926a91fc",
+      "8ac6f59bb6b1a651",
+      "99586813131e2c7a",
+      "ddaf93d2ca2e5c74"
+    ],
+    "x": 74,
+    "y": 779,
+    "w": 572,
+    "h": 122
+  },
+  {
+    "id": "4a4ab62c926a91fc",
+    "type": "debug",
+    "z": "d77c64c1bdc91473",
+    "g": "fe6a01b5933a0e30",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 550,
+    "y": 840,
+    "wires": []
+  },
+  {
+    "id": "8ac6f59bb6b1a651",
+    "type": "inject",
+    "z": "d77c64c1bdc91473",
+    "g": "fe6a01b5933a0e30",
+    "name": "Start stream",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "true",
+    "payloadType": "bool",
+    "x": 190,
+    "y": 820,
+    "wires": [
+      [
+        "ddaf93d2ca2e5c74"
+      ]
+    ]
+  },
+  {
+    "id": "99586813131e2c7a",
+    "type": "inject",
+    "z": "d77c64c1bdc91473",
+    "g": "fe6a01b5933a0e30",
+    "name": "Stop stream",
+    "props": [
+      {
+        "p": "payload"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "payload": "false",
+    "payloadType": "bool",
+    "x": 190,
+    "y": 860,
+    "wires": [
+      [
+        "ddaf93d2ca2e5c74"
+      ]
+    ]
+  },
+  {
+    "id": "ddaf93d2ca2e5c74",
+    "type": "backrest-operation-events",
+    "z": "d77c64c1bdc91473",
+    "g": "fe6a01b5933a0e30",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "listenValue": "payload",
+    "listenType": "msg",
+    "x": 390,
+    "y": 840,
+    "wires": [
+      [
+        "4a4ab62c926a91fc"
+      ]
+    ]
+  },
+  {
+    "id": "8c4010016d086c04",
+    "type": "group",
+    "z": "d77c64c1bdc91473",
+    "name": "Backrest - Path autocomplete",
+    "style": {
+      "label": true
+    },
+    "nodes": [
+      "94278bd25c18bd1f",
+      "2b2f459c2f5982d1",
+      "30bafc9c121d8d71"
+    ],
+    "x": 74,
+    "y": 919,
+    "w": 532,
+    "h": 82
+  },
+  {
+    "id": "94278bd25c18bd1f",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "8c4010016d086c04",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/PathAutocomplete",
+    "inputType": "json",
+    "inputValue": "{\"value\":\"/\"}",
+    "x": 350,
+    "y": 960,
+    "wires": [
+      [
+        "30bafc9c121d8d71"
+      ]
+    ]
+  },
+  {
+    "id": "2b2f459c2f5982d1",
+    "type": "inject",
+    "z": "d77c64c1bdc91473",
+    "g": "8c4010016d086c04",
+    "name": "",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "x": 170,
+    "y": 960,
+    "wires": [
+      [
+        "94278bd25c18bd1f"
+      ]
+    ]
+  },
+  {
+    "id": "30bafc9c121d8d71",
+    "type": "debug",
+    "z": "d77c64c1bdc91473",
+    "g": "8c4010016d086c04",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 510,
+    "y": 960,
+    "wires": []
+  },
+  {
+    "id": "7754c23fbfa84c06",
+    "type": "group",
+    "z": "d77c64c1bdc91473",
+    "name": "Backrest - Get snapshots for first plan",
+    "style": {
+      "label": true
+    },
+    "nodes": [
+      "68605fbf1f96f0c1",
+      "a94151adf4c2562e",
+      "f8ac6f7b8f6aedcb",
+      "75cfadf8ec388672"
+    ],
+    "x": 74,
+    "y": 1019,
+    "w": 672,
+    "h": 82
+  },
+  {
+    "id": "68605fbf1f96f0c1",
+    "type": "inject",
+    "z": "d77c64c1bdc91473",
+    "g": "7754c23fbfa84c06",
+    "name": "",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "x": 170,
+    "y": 1060,
+    "wires": [
+      [
+        "f8ac6f7b8f6aedcb"
+      ]
+    ]
+  },
+  {
+    "id": "a94151adf4c2562e",
+    "type": "debug",
+    "z": "d77c64c1bdc91473",
+    "g": "7754c23fbfa84c06",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 650,
+    "y": 1060,
+    "wires": []
+  },
+  {
+    "id": "f8ac6f7b8f6aedcb",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "7754c23fbfa84c06",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/GetConfig",
+    "inputType": "msg",
+    "inputValue": "payload",
+    "x": 330,
+    "y": 1060,
+    "wires": [
+      [
+        "75cfadf8ec388672"
+      ]
+    ]
+  },
+  {
+    "id": "75cfadf8ec388672",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "7754c23fbfa84c06",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/ListSnapshots",
+    "inputType": "jsonata",
+    "inputValue": "{\t   \"repoId\": payload.plans[0].repo,\t   \"planId\": payload.plans[0].id\t}",
+    "x": 500,
+    "y": 1060,
+    "wires": [
+      [
+        "a94151adf4c2562e"
+      ]
+    ]
+  },
+  {
+    "id": "0290a102cb1b4b18",
+    "type": "group",
+    "z": "d77c64c1bdc91473",
+    "name": "Backrest - List files in latest snapshot for first plan",
+    "style": {
+      "label": true
+    },
+    "nodes": [
+      "8d9ed8f1fc469ab6",
+      "a7ca7141e37bff4b",
+      "e2d8a6f626559791",
+      "ed915bcdd28402f9",
+      "19f35d218d3b2147",
+      "89df43a350492be1"
+    ],
+    "x": 74,
+    "y": 1119,
+    "w": 1092,
+    "h": 82
+  },
+  {
+    "id": "8d9ed8f1fc469ab6",
+    "type": "inject",
+    "z": "d77c64c1bdc91473",
+    "g": "0290a102cb1b4b18",
+    "name": "",
+    "props": [],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "x": 170,
+    "y": 1160,
+    "wires": [
+      [
+        "a7ca7141e37bff4b"
+      ]
+    ]
+  },
+  {
+    "id": "a7ca7141e37bff4b",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "0290a102cb1b4b18",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/GetConfig",
+    "inputType": "msg",
+    "inputValue": "payload",
+    "x": 330,
+    "y": 1160,
+    "wires": [
+      [
+        "ed915bcdd28402f9"
+      ]
+    ]
+  },
+  {
+    "id": "e2d8a6f626559791",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "0290a102cb1b4b18",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/ListSnapshots",
+    "inputType": "jsonata",
+    "inputValue": "{\t   \"repoId\": plan.repo,\t   \"planId\": plan.id\t}",
+    "x": 700,
+    "y": 1160,
+    "wires": [
+      [
+        "19f35d218d3b2147"
+      ]
+    ]
+  },
+  {
+    "id": "ed915bcdd28402f9",
+    "type": "change",
+    "z": "d77c64c1bdc91473",
+    "g": "0290a102cb1b4b18",
+    "name": "",
+    "rules": [
+      {
+        "t": "set",
+        "p": "plan",
+        "pt": "msg",
+        "to": "payload.plans[0]",
+        "tot": "msg",
+        "dc": true
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 510,
+    "y": 1160,
+    "wires": [
+      [
+        "e2d8a6f626559791"
+      ]
+    ]
+  },
+  {
+    "id": "19f35d218d3b2147",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "0290a102cb1b4b18",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/ListSnapshotFiles",
+    "inputType": "jsonata",
+    "inputValue": "{\t    \"repoId\": plan.repo,\t    \"snapshotId\": payload.snapshots[0].id,\t    \"path\": plan.paths[0]\t}",
+    "x": 900,
+    "y": 1160,
+    "wires": [
+      [
+        "89df43a350492be1"
+      ]
+    ]
+  },
+  {
+    "id": "89df43a350492be1",
+    "type": "debug",
+    "z": "d77c64c1bdc91473",
+    "g": "0290a102cb1b4b18",
+    "name": "",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1070,
+    "y": 1160,
+    "wires": []
+  },
+  {
+    "id": "d9671fb2287d275b",
+    "type": "group",
+    "z": "d77c64c1bdc91473",
+    "name": "Backrest - Start backup and stream related operation info",
+    "style": {
+      "label": true
+    },
+    "nodes": [
+      "ca2d9f2ed9af885d",
+      "b739c3704c2760cf",
+      "009e67651984abc1",
+      "75635717c5ed821d",
+      "63189eea974a5197",
+      "02e31d7719a0a245",
+      "8f4b5ac0d777d2d4",
+      "a7b6193184a02fef"
+    ],
+    "x": 74,
+    "y": 339,
+    "w": 1272,
+    "h": 122
+  },
+  {
+    "id": "ca2d9f2ed9af885d",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "d9671fb2287d275b",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/Backup",
+    "inputType": "jsonata",
+    "inputValue": "{\t    \"value\": $flowContext(\"planId\")\t}\t",
+    "x": 690,
+    "y": 380,
+    "wires": [
+      [
+        "63189eea974a5197"
+      ]
+    ]
+  },
+  {
+    "id": "b739c3704c2760cf",
+    "type": "inject",
+    "z": "d77c64c1bdc91473",
+    "g": "d9671fb2287d275b",
+    "name": "",
+    "props": [
+      {
+        "p": "repo_index",
+        "v": "2",
+        "vt": "num"
+      }
+    ],
+    "repeat": "",
+    "crontab": "",
+    "once": false,
+    "onceDelay": 0.1,
+    "topic": "",
+    "x": 170,
+    "y": 400,
+    "wires": [
+      [
+        "009e67651984abc1"
+      ]
+    ]
+  },
+  {
+    "id": "009e67651984abc1",
+    "type": "backrest-api",
+    "z": "d77c64c1bdc91473",
+    "g": "d9671fb2287d275b",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "endpoint": "/v1.Backrest/GetConfig",
+    "inputType": "msg",
+    "inputValue": "payload",
+    "x": 330,
+    "y": 400,
+    "wires": [
+      [
+        "8f4b5ac0d777d2d4"
+      ]
+    ]
+  },
+  {
+    "id": "75635717c5ed821d",
+    "type": "debug",
+    "z": "d77c64c1bdc91473",
+    "g": "d9671fb2287d275b",
+    "name": "OperationEvents Stream",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 1190,
+    "y": 420,
+    "wires": []
+  },
+  {
+    "id": "63189eea974a5197",
+    "type": "debug",
+    "z": "d77c64c1bdc91473",
+    "g": "d9671fb2287d275b",
+    "name": "Start Backup",
+    "active": true,
+    "tosidebar": true,
+    "console": false,
+    "tostatus": false,
+    "complete": "true",
+    "targetType": "full",
+    "statusVal": "",
+    "statusType": "auto",
+    "x": 870,
+    "y": 380,
+    "wires": []
+  },
+  {
+    "id": "02e31d7719a0a245",
+    "type": "function",
+    "z": "d77c64c1bdc91473",
+    "g": "d9671fb2287d275b",
+    "name": "filter events & stop stream",
+    "func": "// this function node filters incoming operation events for the specific plan we \n// care about. It is also in charge of sending the stop command back to the Operation Events node\n// to tell it to unsubscribe.\n\nconst allowedEvents = [\"updated_operations\", \"created_operations\"];\nconst allowedOps = ['operation_backup'];\n\nif (allowedEvents.indexOf(msg.payload.event) === -1 ) {\n    return false;\n}\n\nlet operations = typeof msg.payload.created_operations !== \"undefined\"\n    ? msg.payload.created_operations.operations\n    : msg.payload.updated_operations.operations;\nmsg.payload = operations.filter(item => allowedOps.includes(item.op));\n\nlet planId = flow.get('planId');\nfor (let i = operations.length - 1; i >= 0; i--) {\n    if (!allowedOps.includes(operations[i].op) || operations[i].plan_id !== planId) {\n        operations.splice(i, 1);\n    }\n}\n\nif(!operations.length) {\n    return false;\n}\n\nreturn [\n    msg,\n    ( msg.payload[0].status === \"STATUS_SUCCESS\" || msg.payload[0].status === \"STATUS_ERROR\" )\n        ? {\"stop\": true}\n        : null\n];",
+    "outputs": 2,
+    "timeout": 0,
+    "noerr": 0,
+    "initialize": "",
+    "finalize": "",
+    "libs": [],
+    "x": 930,
+    "y": 420,
+    "wires": [
+      [
+        "75635717c5ed821d"
+      ],
+      [
+        "a7b6193184a02fef"
+      ]
+    ]
+  },
+  {
+    "id": "8f4b5ac0d777d2d4",
+    "type": "change",
+    "z": "d77c64c1bdc91473",
+    "g": "d9671fb2287d275b",
+    "name": "",
+    "rules": [
+      {
+        "t": "set",
+        "p": "planId",
+        "pt": "flow",
+        "to": "payload.plans[$$.repo_index].id",
+        "tot": "jsonata"
+      }
+    ],
+    "action": "",
+    "property": "",
+    "from": "",
+    "to": "",
+    "reg": false,
+    "x": 500,
+    "y": 400,
+    "wires": [
+      [
+        "ca2d9f2ed9af885d",
+        "a7b6193184a02fef"
+      ]
+    ]
+  },
+  {
+    "id": "a7b6193184a02fef",
+    "type": "backrest-operation-events",
+    "z": "d77c64c1bdc91473",
+    "g": "d9671fb2287d275b",
+    "name": "",
+    "config": "06bd2857df140cc4",
+    "listenValue": "stop ? 0 : 1",
+    "listenType": "jsonata",
+    "x": 710,
+    "y": 420,
+    "wires": [
+      [
+        "02e31d7719a0a245"
       ]
     ]
   }
