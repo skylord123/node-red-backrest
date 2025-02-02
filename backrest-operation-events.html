@@ -1,12 +1,13 @@
 <script type="text/javascript">
     RED.nodes.registerType('backrest-operation-events', {
         category: 'backrest',
-        color: "#e2d96e",
+        color: "#00e4d3",
         defaults: {
             name: { value: "" },
             config: { type: "backrest-config", required: true },
-            listenValue: { value: "payload", required: false },
-            listenType: { value: "msg", required: false }
+            mode: { value: "always", required: true },
+            triggerValue: { value: "payload", required: false },
+            triggerType: { value: "msg", required: false }
         },
         inputs: 1,
         outputs: 1,
@@ -16,16 +17,37 @@
             return this.name || "Operation Events";
         },
         oneditprepare: function() {
-            // Setup typed input for "listenValue"
-            $("#node-input-listenValue").typedInput({
-                types: ["msg","flow","global","str","jsonata","bool","num"],
-                typeField: "#node-input-listenType"
+            // Setup typed input for "triggerValue"
+            $("#node-input-triggerValue").typedInput({
+                types: ["msg", "flow", "global", "str", "jsonata", "bool", "num"],
+                typeField: "#node-input-triggerType"
             });
+
+            // Handle mode selection changes to update help text
+            $("#node-input-mode").on("change", function () {
+                const selectedMode = $(this).val();
+                let helpText = "";
+
+                if (selectedMode === "always") {
+                    helpText = "Node will automatically subscribe to operation events when deployed and maintain " +
+                        "the subscription until the node is stopped or removed. Incoming messages are ignored.";
+                    $("#trigger-input-row").hide();
+                } else {
+                    helpText = "Node will subscribe to operation events when it receives a message and the trigger " +
+                        "evaluates to true. Conversely, it will unsubscribe when a message is received and the trigger evaluates to false.";
+                    $("#trigger-input-row").show();
+                }
+
+                $("#mode-help-text").text(helpText);
+            });
+
+            // Trigger initial help text update
+            $("#node-input-mode").trigger("change");
         },
-        oneditsave: function() {
+        oneditsave: function () {
             // Ensure we store the typed input fields
-            this.listenValue = $("#node-input-listenValue").typedInput("value");
-            this.listenType  = $("#node-input-listenValue").typedInput("type");
+            this.triggerValue = $("#node-input-triggerValue").typedInput("value");
+            this.triggerType = $("#node-input-triggerValue").typedInput("type");
         }
     });
 </script>
@@ -35,24 +57,101 @@
         <label for="node-input-name">
             <i class="fa fa-tag"></i> Name
         </label>
-        <input type="text" id="node-input-name" />
+        <input type="text" id="node-input-name"/>
     </div>
 
     <div class="form-row">
         <label for="node-input-config">
             <i class="fa fa-cog"></i> Backrest Config
         </label>
-        <input type="text" id="node-input-config" />
+        <input type="text" id="node-input-config"/>
     </div>
 
     <div class="form-row">
-        <label for="node-input-listenValue">
-            <i class="fa fa-play"></i> Start Listening?
+        <label for="node-input-mode">
+            <i class="fa fa-tasks"></i> Operation Mode
         </label>
-        <input type="text" id="node-input-listenValue" style="width:60%;" />
-        <input type="hidden" id="node-input-listenType" />
+        <select id="node-input-mode" style="width:70%;">
+            <option value="always">Always Listening</option>
+            <option value="manual">Subscribe on Trigger</option>
+        </select>
+        <div class="form-tips" id="mode-help-text" style="margin-top: 5px;"></div>
+    </div>
+
+    <div class="form-row" id="trigger-input-row">
+        <label for="node-input-triggerValue">
+            <i class="fa fa-play"></i> Trigger
+        </label>
+        <input type="text" id="node-input-triggerValue" style="width:60%;"/>
+        <input type="hidden" id="node-input-triggerType"/>
         <div style="margin-left:5px;">
-            <small>Evaluates to <strong>true</strong> to subscribe, <strong>false</strong> to unsubscribe.</small>
+            <small>The value that controls subscription state when in "Subscribe on Trigger" mode.</small>
         </div>
     </div>
+</script>
+
+<script type="text/html" data-help-name="backrest-operation-events">
+    <p>Subscribes to real-time operation events from a Backrest server. This node allows you to monitor the creation, updates, and completion of operations like backups, restores, and maintenance tasks.</p>
+
+    <h3>Properties</h3>
+    <dl class="message-properties">
+        <dt>Backrest Config
+            <span class="property-type">config</span>
+        </dt>
+        <dd>Configuration for connecting to the Backrest server.</dd>
+
+        <dt>Operation Mode
+            <span class="property-type">select</span>
+        </dt>
+        <dd>Controls how the node subscribes to events:
+            <ul>
+                <li><code>Always Listening</code> - Automatically subscribes on deploy and stays connected</li>
+                <li><code>Subscribe on Trigger</code> - Subscribes/unsubscribes based on incoming messages</li>
+            </ul>
+        </dd>
+
+        <dt class="optional">Trigger
+            <span class="property-type">msg | flow | global | bool</span>
+        </dt>
+        <dd>Property that controls subscription state in "Subscribe on Trigger" mode. Only shown when using this mode.</dd>
+    </dl>
+
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt class="optional">
+            msg.payload <span class="property-type">boolean</span>
+        </dt>
+        <dd>In "Subscribe on Trigger" mode: Set to true to subscribe to events, false to unsubscribe. Must match the configured Trigger property type.</dd>
+    </dl>
+
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>
+            msg.payload <span class="property-type">object</span>
+        </dt>
+        <dd>Operation event data containing details about the operation's status, type, and progress. The structure includes:
+            <ul>
+                <li><code>type</code> - Event type (created, updated, deleted)</li>
+                <li><code>operation</code> - Details about the operation</li>
+                <li><code>timestamp</code> - When the event occurred</li>
+            </ul>
+        </dd>
+    </dl>
+
+    <h3>Details</h3>
+    <p>The Operation Events node maintains a subscription to your Backrest server's event stream, allowing you to:</p>
+    <ul>
+        <li>Monitor operation lifecycle events in real-time</li>
+        <li>Track the progress of running operations</li>
+        <li>Build reactive workflows based on operation states</li>
+        <li>Create operation dashboards</li>
+    </ul>
+
+    <h3>Status</h3>
+    <p>The node indicates its current state through its status:</p>
+    <ul>
+        <li><strong>Green dot</strong>: Successfully subscribed and receiving events</li>
+        <li><strong>Yellow ring</strong>: Not currently subscribed</li>
+        <li><strong>Red dot</strong>: Error state or no configuration</li>
+    </ul>
 </script>

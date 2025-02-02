@@ -9,4 +9,4 @@ You can import the example JSON here (copy the full page and import using hambur
 
 Rendered:
 
-![img.png](example.png)
+![example.png](example.png)

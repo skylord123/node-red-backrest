@@ -242,7 +242,7 @@
          */
         RED.nodes.registerType('backrest-api', {
             category: 'backrest',
-            color: "#e2d96e",
+            color: "#00e4d3",
             defaults: {
                 name: { value: "" },
                 config: { type: "backrest-config", required: true },
@@ -253,7 +253,7 @@
             inputs: 1,
             outputs: 1,
             icon: "node-red-contrib-backrest-logo.png",
-
+            paletteLabel: "API",
             /**
              * Dynamically sets the node label:
              *  - If user manually provided `this.name`, use that
@@ -355,4 +355,68 @@
         <div style="font-weight:800;"><i class="fa fa-info-circle"></i> Selected API Info</div>
         <div id="selected-api-description" style="margin-top:5px;"></div>
     </div>
+</script>
+
+<script type="text/html" data-help-name="backrest-api">
+    <p>Makes API calls to a Backrest server. This node allows you to interact with various Backrest API endpoints for managing backups, restores, and other operations.</p>
+
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt class="optional">
+            msg.payload <span class="property-type">object | null</span>
+        </dt>
+        <dd>Input data for the API endpoint. The structure depends on the selected endpoint. If the endpoint requires no input, this can be omitted.</dd>
+    </dl>
+
+    <h3>Properties</h3>
+    <dl class="message-properties">
+        <dt>Backrest Server
+            <span class="property-type">config</span>
+        </dt>
+        <dd>Configuration for connecting to the Backrest server.</dd>
+
+        <dt>API Endpoint
+            <span class="property-type">select</span>
+        </dt>
+        <dd>The Backrest API endpoint to call. Each endpoint has specific input requirements and output formats.</dd>
+
+        <dt class="optional">Input
+            <span class="property-type">msg | flow | global | json</span>
+        </dt>
+        <dd>Property that contains the input data for the API call. Only shown for endpoints that accept input.</dd>
+    </dl>
+
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>
+            msg.payload <span class="property-type">object | null</span>
+        </dt>
+        <dd>The response from the Backrest server. Structure varies by endpoint.</dd>
+
+        <dt>
+            msg.error <span class="property-type">string</span>
+        </dt>
+        <dd>Error message if the API call fails.</dd>
+    </dl>
+
+    <h3>Details</h3>
+    <p>This node provides access to the following Backrest API endpoints:</p>
+    <ul>
+        <li><code>Get Operations</code> - Fetch the list of operations from the server</li>
+        <li><code>Cancel Operation</code> - Attempt to cancel a running operation</li>
+        <li><code>Get Download URL</code> - Get a signed URL for downloading operation results</li>
+        <li><code>Start Backup</code> - Schedule a new backup operation</li>
+        <li><code>Restore Snapshot</code> - Schedule a restore operation</li>
+        <li><code>Forget Snapshot</code> - Schedule a forget operation</li>
+        <li><code>Run Repository Task</code> - Execute repository maintenance tasks</li>
+        <li><code>List Snapshots</code> - List available snapshots</li>
+        <li><code>List Files in Snapshot</code> - Browse files within a snapshot</li>
+        <li><code>Get/Set Config</code> - Manage server configuration</li>
+        <li><code>Get Summary Dashboard</code> - Retrieve system overview</li>
+    </ul>
+
+    <h3>References</h3>
+    <ul>
+        <li><a href="https://restic.net/">Restic Documentation</a> - Learn more about the underlying backup tool</li>
+    </ul>
 </script>

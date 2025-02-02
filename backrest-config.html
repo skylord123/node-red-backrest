@@ -94,3 +94,57 @@
         </div>
     </div>
 </script>
+
+<script type="text/html" data-help-name="backrest-config">
+    <p>Configuration node for connecting to a Backrest server. This node manages the connection details and authentication for communicating with your Backrest instance.</p>
+
+    <h3>Properties</h3>
+    <dl class="message-properties">
+        <dt>Name
+            <span class="property-type">string</span>
+        </dt>
+        <dd>Name for this configuration (shown in the editor).</dd>
+
+        <dt>Backrest URL
+            <span class="property-type">string</span>
+        </dt>
+        <dd>URL of your Backrest server (e.g., http://localhost:9898).</dd>
+
+        <dt class="optional">Username
+            <span class="property-type">string</span>
+        </dt>
+        <dd>Username for authentication with the Backrest server.</dd>
+
+        <dt class="optional">Password
+            <span class="property-type">string</span>
+        </dt>
+        <dd>Password for authentication with the Backrest server.</dd>
+
+        <dt>Auto Reconnect
+            <span class="property-type">boolean</span>
+        </dt>
+        <dd>Automatically attempt to reconnect if the connection is lost.</dd>
+
+        <dt>Reconnect Interval
+            <span class="property-type">number</span>
+        </dt>
+        <dd>Time in milliseconds between reconnection attempts (default: 1000).</dd>
+
+        <dt>Max Reconnect Attempts
+            <span class="property-type">number</span>
+        </dt>
+        <dd>Maximum number of reconnection attempts (0 for infinite).</dd>
+    </dl>
+
+    <h3>Details</h3>
+    <p>This configuration node is used by other Backrest nodes to connect to your Backrest server. It handles:</p>
+    <ul>
+        <li>Server connection details</li>
+        <li>Authentication credentials</li>
+        <li>Connection management</li>
+        <li>Automatic reconnection</li>
+    </ul>
+
+    <h3>Security Note</h3>
+    <p>Username and password are stored encrypted in your Node-RED credentials file.</p>
+</script>

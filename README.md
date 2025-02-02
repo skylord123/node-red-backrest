@@ -3,6 +3,8 @@
 🚧 **Work in Progress** 🚧  
 This Node-RED module allows communication with a [Backrest](https://github.com/garethgeorge/backrest) instance, enabling seamless integration of [restic-powered](https://restic.net/) backups into Node-RED flows.
 
+![img.png](examples/single-example.png)
+
 ## Features
 
 - Manage Backrest repositories, snapshots, and backup operations within Node-RED.
