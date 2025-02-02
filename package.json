@@ -17,7 +17,8 @@
     "nodes": {
       "backrest-config": "backrest-config.js",
       "backrest-api": "backrest-api.js",
-      "backrest-api-stream": "backrest-api-stream.js"
+      "backrest-operation-events": "backrest-operation-events.js",
+      "backrest-get-logs": "backrest-get-logs.js"
     }
   },
   "dependencies": {

@@ -1,0 +1,78 @@
+<script type="text/javascript">
+    RED.nodes.registerType('backrest-get-logs', {
+        category: 'backrest',
+        color: "#e2d96e",
+        defaults: {
+            name: { value: "" },
+            config: { type: "backrest-config", required: true },
+            listenValue: { value: "true", required: false },
+            listenType: { value: "bool", required: false },
+            logRefValue: { value: "logRef", required: false },
+            logRefType: { value: "msg", required: false }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "node-red-contrib-backrest-logo.png",
+        paletteLabel: "Get Logs",
+        label: function() {
+            return this.name || "Get Logs";
+        },
+        oneditprepare: function() {
+            // Listen typed input
+            $("#node-input-listenValue").typedInput({
+                types: ["msg","flow","global","str","jsonata","bool","num"],
+                typeField: "#node-input-listenType"
+            });
+
+            // Log ref typed input
+            $("#node-input-logRefValue").typedInput({
+                types: ["msg","flow","global","str","jsonata","bool","num"],
+                typeField: "#node-input-logRefType"
+            });
+        },
+        oneditsave: function() {
+            this.listenValue = $("#node-input-listenValue").typedInput("value");
+            this.listenType = $("#node-input-listenValue").typedInput("type");
+            this.logRefValue = $("#node-input-logRefValue").typedInput("value");
+            this.logRefType = $("#node-input-logRefValue").typedInput("type");
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="backrest-get-logs">
+    <div class="form-row">
+        <label for="node-input-name">
+            <i class="fa fa-tag"></i> Name
+        </label>
+        <input type="text" id="node-input-name" placeholder="Give this node a name" />
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-config">
+            <i class="fa fa-cog"></i> Backrest Config
+        </label>
+        <input type="text" id="node-input-config" />
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-listenValue">
+            <i class="fa fa-play"></i> Start Listening?
+        </label>
+        <input type="text" id="node-input-listenValue" style="width:60%;" />
+        <input type="hidden" id="node-input-listenType" />
+        <div style="margin-left:5px;">
+            <small>Evaluates to <strong>true</strong> to start the GetLogs stream, <strong>false</strong> to stop.</small>
+        </div>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-logRefValue">
+            <i class="fa fa-file-text-o"></i> Log Reference
+        </label>
+        <input type="text" id="node-input-logRefValue" style="width:60%;" />
+        <input type="hidden" id="node-input-logRefType" />
+        <div style="margin-left:5px;">
+            <small>The "ref" for which logs should be streamed.</small>
+        </div>
+    </div>
+</script>
