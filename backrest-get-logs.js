@@ -49,8 +49,8 @@ module.exports = function (RED) {
                 return;
             }
             // Store configuration properties
-            this.listenValue = config.listenValue;
-            this.listenType = config.listenType;
+            this.triggerValue = config.triggerValue;
+            this.triggerType = config.triggerType;
             this.logRefValue = config.logRefValue;
             this.logRefType = config.logRefType;
 
@@ -74,7 +74,7 @@ module.exports = function (RED) {
         async handleInput(msg, send, done) {
             try {
                 // Evaluate if we should start listening
-                const shouldListen = await evaluateProperty(this.listenValue, this.listenType, this, msg);
+                const shouldListen = await evaluateProperty(this.triggerValue, this.triggerType, this, msg);
                 this.debug("shouldListen = " + (shouldListen ? "Yes" : "No"));
 
                 if (!shouldListen) {

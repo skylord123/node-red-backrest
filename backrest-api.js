@@ -14,263 +14,105 @@ module.exports = function (RED) {
         const baseURL = serverConfig.backrest_url || '';
         const username = serverConfig.credentials.username || '';
         const password = serverConfig.credentials.password || '';
+        const outputType = config.outputType || "msg";
+        const outputValue = config.outputValue || "payload";
 
         // Predefined API endpoints with descriptions
         const apiMap = {
             "/v1.Backrest/GetOperations": {
                 description: "Fetch the list of operations from the Backrest server.",
-                input: {
-                    type: "object",
-                    example: {
-                        lastN: 1000, // Number of recent operations requested
-                        selector: { repoId: "repo-id" } // Repository identifier
-                    },
-                },
-                output: {
-                    type: "array",
-                    description: "Array of operations with their details (e.g., type, status)."
-                }
+                input: { type: "object", example: { lastN: 1000, selector: { repoId: "repo-id" } } },
+                output: { type: "array", description: "Array of operations with details (type, status, etc.)." }
             },
             "/v1.Backrest/GetConfig": {
                 description: "Retrieve the Backrest server configuration.",
-                input: {
-                    type: "none",
-                    example: null // No input required
-                },
-                output: {
-                    type: "object",
-                    description: "The configuration object describing the Backrest setup."
-                }
+                input: { type: "none", example: null },
+                output: { type: "object", description: "The Backrest configuration object." }
             },
             "/v1.Backrest/SetConfig": {
                 description: "Update the Backrest server configuration.",
-                input: {
-                    type: "object",
-                    example: {
-                        key: "value" // Replace with the actual configuration format
-                    }
-                },
-                output: {
-                    type: "object",
-                    description: "The updated configuration object."
-                }
+                input: { type: "object", example: { key: "value" } },
+                output: { type: "object", description: "The updated configuration object." }
             },
             "/v1.Backrest/CheckRepoExists": {
                 description: "Check if a repository exists on the Backrest server.",
-                input: {
-                    type: "object",
-                    example: {
-                        id: "repo-id" // Repository identifier
-                    }
-                },
-                output: {
-                    type: "boolean",
-                    description: "Returns true if the repository exists, false otherwise."
-                }
+                input: { type: "object", example: { id: "repo-id" } },
+                output: { type: "boolean", description: "True if the repository exists, false otherwise." }
             },
             "/v1.Backrest/AddRepo": {
                 description: "Add a new repository to the Backrest server.",
-                input: {
-                    type: "object",
-                    example: {
-                        id: "repo-id", // Repository identifier
-                        path: "/path/to/repo" // Repository path
-                    }
-                },
-                output: {
-                    type: "object",
-                    description: "The updated configuration object including the new repository."
-                }
+                input: { type: "object", example: { id: "repo-id", path: "/path/to/repo" } },
+                output: { type: "object", description: "Updated config object including the new repository." }
             },
             "/v1.Backrest/GetOperationEvents": {
-                description: "Stream real-time operation changes (created, updated, or deleted).",
-                input: {
-                    type: "none",
-                    example: null // No input required
-                },
-                output: {
-                    type: "stream",
-                    description: "A stream of operation events (created, updated, deleted)."
-                }
+                description: "Stream real-time operation events (created, updated, or deleted).",
+                input: { type: "none", example: null },
+                output: { type: "stream", description: "A stream of operation events." }
             },
             "/v1.Backrest/ListSnapshots": {
                 description: "List snapshots for a repository or plan.",
-                input: {
-                    type: "object",
-                    example: {
-                        repoId: "repo-id", // Repository identifier
-                        planId: "plan-id"  // Plan identifier (optional)
-                    }
-                },
-                output: {
-                    type: "array",
-                    description: "Array of snapshots with metadata (e.g., ID, paths, tags)."
-                }
+                input: { type: "object", example: { repoId: "repo-id", planId: "plan-id" } },
+                output: { type: "array", description: "Array of snapshots with metadata." }
             },
             "/v1.Backrest/ListSnapshotFiles": {
                 description: "List files within a snapshot at a specific path.",
-                input: {
-                    type: "object",
-                    example: {
-                        repoId: "repository-id",   // Repository identifier
-                        snapshotId: "snapshot-id", // Snapshot identifier
-                        path: "target/path"        // Path to list files for
-                    }
-                },
-                output: {
-                    type: "object",
-                    description: "Returns the path queried and an array of file entries (name, type, size, etc.)."
-                }
+                input: { type: "object", example: { repoId: "repository-id", snapshotId: "snapshot-id", path: "target/path" } },
+                output: { type: "object", description: "Contains the path and an array of file entries." }
             },
             "/v1.Backrest/Backup": {
                 description: "Schedule a backup operation.",
-                input: {
-                    type: "object",
-                    example: {
-                        value: "plan-id" // Plan identifier
-                    }
-                },
-                output: {
-                    type: "none",
-                    description: "No response body, indicates the operation was successfully enqueued."
-                }
+                input: { type: "object", example: { value: "plan-id" } },
+                output: { type: "none", description: "No response body, indicates successful queueing." }
             },
             "/v1.Backrest/DoRepoTask": {
-                description: "Schedule a repository task (e.g., prune, stats).",
-                input: {
-                    type: "object",
-                    example: {
-                        repoId: "repo-id", // Repository identifier
-                        task: "TASK_PRUNE" // Task type (e.g., TASK_PRUNE, TASK_CHECK)
-                    }
-                },
-                output: {
-                    type: "none",
-                    description: "No response body, indicates the task was successfully enqueued."
-                }
+                description: "Schedule a repository task (prune, stats, etc.).",
+                input: { type: "object", example: { repoId: "repo-id", task: "TASK_PRUNE" } },
+                output: { type: "none", description: "No response body, indicates successful queueing." }
             },
             "/v1.Backrest/Forget": {
                 description: "Schedule a forget operation to clean up snapshots.",
-                input: {
-                    type: "object",
-                    example: {
-                        repoId: "repo-id",  // Repository identifier
-                        planId: "plan-id",  // Plan identifier
-                        snapshotId: "snap-id" // Specific snapshot to forget (optional)
-                    }
-                },
-                output: {
-                    type: "none",
-                    description: "No response body, indicates the operation was successfully enqueued."
-                }
+                input: { type: "object", example: { repoId: "repo-id", planId: "plan-id", snapshotId: "snap-id" } },
+                output: { type: "none", description: "No response body, indicates successful queueing." }
             },
             "/v1.Backrest/Restore": {
                 description: "Schedule a restore operation for a snapshot.",
-                input: {
-                    type: "object",
-                    example: {
-                        planId: "plan-id",       // Plan identifier
-                        repoId: "repo-id",       // Repository identifier
-                        snapshotId: "snapshot-id", // Snapshot to restore
-                        path: "/source/path",    // Source path in the snapshot (optional)
-                        target: "/restore/path"  // Target restore path (optional)
-                    }
-                },
-                output: {
-                    type: "none",
-                    description: "No response body, indicates the operation was successfully enqueued."
-                }
+                input: { type: "object", example: { planId: "plan-id", repoId: "repo-id", snapshotId: "snapshot-id", path: "/source/path", target: "/restore/path" } },
+                output: { type: "none", description: "No response body, indicates successful queueing." }
             },
             "/v1.Backrest/Cancel": {
                 description: "Attempt to cancel an operation by its ID.",
-                input: {
-                    type: "object",
-                    example: {
-                        value: 12345 // Operation ID
-                    }
-                },
-                output: {
-                    type: "none",
-                    description: "No response body, indicates the cancellation request was submitted."
-                }
+                input: { type: "object", example: { value: 12345 } },
+                output: { type: "none", description: "No response body, indicates cancellation request submitted." }
             },
             "/v1.Backrest/GetLogs": {
                 description: "Stream logs for a specific operation.",
-                input: {
-                    type: "object",
-                    example: {
-                        ref: "operation-ref" // Operation reference
-                    }
-                },
-                output: {
-                    type: "stream",
-                    description: "Stream of log data for the specified operation."
-                }
+                input: { type: "object", example: { ref: "operation-ref" } },
+                output: { type: "stream", description: "A stream of log data." }
             },
             "/v1.Backrest/RunCommand": {
                 description: "Execute a custom Restic command on a repository.",
-                input: {
-                    type: "object",
-                    example: {
-                        repoId: "repo-id",  // Repository identifier
-                        command: "restic-command" // Command to execute
-                    }
-                },
-                output: {
-                    type: "object",
-                    description: "Operation ID of the submitted command."
-                }
+                input: { type: "object", example: { repoId: "repo-id", command: "restic-command" } },
+                output: { type: "object", description: "Operation ID of the submitted command." }
             },
             "/v1.Backrest/GetDownloadURL": {
                 description: "Retrieve a signed URL for downloading forget operation results.",
-                input: {
-                    type: "object",
-                    example: {
-                        value: 12345 // Forget operation ID
-                    }
-                },
-                output: {
-                    type: "object",
-                    description: "Signed URL for downloading the results."
-                }
+                input: { type: "object", example: { value: 12345 } },
+                output: { type: "object", description: "Signed URL for downloading results." }
             },
             "/v1.Backrest/ClearHistory": {
                 description: "Clear operation history on the server.",
-                input: {
-                    type: "object",
-                    example: {
-                        selector: { planId: "plan-id" }, // Filter for operations to clear (optional)
-                        onlyFailed: true // Clear only failed operations (optional)
-                    }
-                },
-                output: {
-                    type: "none",
-                    description: "No response body, indicates the history was successfully cleared."
-                }
+                input: { type: "object", example: { selector: { planId: "plan-id" }, onlyFailed: true } },
+                output: { type: "none", description: "No response body, indicates history cleared." }
             },
             "/v1.Backrest/PathAutocomplete": {
                 description: "Provide path autocomplete suggestions for a given path.",
-                input: {
-                    type: "object",
-                    example: {
-                        value: "/base/path" // Path to autocomplete
-                    }
-                },
-                output: {
-                    type: "array",
-                    description: "List of autocomplete suggestions."
-                }
+                input: { type: "object", example: { value: "/base/path" } },
+                output: { type: "array", description: "List of autocomplete suggestions." }
             },
             "/v1.Backrest/GetSummaryDashboard": {
                 description: "Retrieve summary data for the dashboard view.",
-                input: {
-                    type: "none",
-                    example: null // No input required
-                },
-                output: {
-                    type: "object",
-                    description: "Summary metrics and statistics for the dashboard."
-                }
+                input: { type: "none", example: null },
+                output: { type: "object", description: "Summary metrics and stats for the dashboard." }
             }
         };
 
@@ -285,7 +127,8 @@ module.exports = function (RED) {
 
             const apiConfig = apiMap[endpoint];
 
-            const processInput = function (err, evaluatedInput) {
+            // Evaluate input property
+            RED.util.evaluateNodeProperty(config.inputValue, config.inputType, node, msg, (err, evaluatedInput) => {
                 if (err) {
                     node.error(`Input Evaluation Error: ${err.message}`);
                     if (done) done(err);
@@ -293,27 +136,36 @@ module.exports = function (RED) {
                 }
 
                 let payload = evaluatedInput || {};
-
                 if (apiConfig.input.type === "none") {
+                    // Force empty object if endpoint does not require input
                     payload = {};
                 }
 
-                const headers = {
-                    'Content-Type': 'application/json'
-                };
-
+                const headers = { 'Content-Type': 'application/json' };
                 const url = `${baseURL}${endpoint}`;
-                axios.post(
-                    url,
-                    payload,
-                    {
-                        headers,
-                        auth: (username && password) ? { username, password } : undefined
-                    }
-                )
+
+                axios.post(url, payload, {
+                    headers,
+                    auth: (username && password) ? { username, password } : undefined
+                })
                     .then(response => {
-                        msg.payload = response.data;
-                        send(msg);
+                        // Decide where to store output based on outputType + outputValue
+                        switch (outputType) {
+                            case "flow":
+                                node.context().flow.set(outputValue, response.data);
+                                send(msg);
+                                break;
+                            case "global":
+                                node.context().global.set(outputValue, response.data);
+                                send(msg);
+                                break;
+                            case "msg":
+                            default:
+                                RED.util.setMessageProperty(msg, outputValue, response.data, true);
+                                send(msg);
+                                break;
+                        }
+
                         if (done) done();
                     })
                     .catch(error => {
@@ -326,9 +178,7 @@ module.exports = function (RED) {
                         node.error(`Request failed - ${JSON.stringify(errorDetails)}`);
                         if (done) done(error);
                     });
-            };
-
-            RED.util.evaluateNodeProperty(config.inputValue, config.inputType, node, msg, processInput);
+            });
         });
     }
 

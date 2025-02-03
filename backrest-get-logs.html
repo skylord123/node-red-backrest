@@ -5,8 +5,8 @@
         defaults: {
             name: { value: "" },
             config: { type: "backrest-config", required: true },
-            listenValue: { value: "true", required: false },
-            listenType: { value: "bool", required: false },
+            triggerValue: { value: "true", required: false },
+            triggerType: { value: "bool", required: false },
             logRefValue: { value: "logRef", required: false },
             logRefType: { value: "msg", required: false }
         },
@@ -19,9 +19,9 @@
         },
         oneditprepare: function() {
             // Listen typed input
-            $("#node-input-listenValue").typedInput({
+            $("#node-input-triggerValue").typedInput({
                 types: ["msg","flow","global","str","jsonata","bool","num"],
-                typeField: "#node-input-listenType"
+                typeField: "#node-input-triggerType"
             });
 
             // Log ref typed input
@@ -31,8 +31,8 @@
             });
         },
         oneditsave: function() {
-            this.listenValue = $("#node-input-listenValue").typedInput("value");
-            this.listenType = $("#node-input-listenValue").typedInput("type");
+            this.triggerValue = $("#node-input-triggerValue").typedInput("value");
+            this.triggerType = $("#node-input-triggerValue").typedInput("type");
             this.logRefValue = $("#node-input-logRefValue").typedInput("value");
             this.logRefType = $("#node-input-logRefValue").typedInput("type");
         }
@@ -49,19 +49,22 @@
 
     <div class="form-row">
         <label for="node-input-config">
-            <i class="fa fa-cog"></i> Backrest Config
+            <i class="fa fa-server"></i> Backrest Server
         </label>
         <input type="text" id="node-input-config" />
     </div>
 
     <div class="form-row">
-        <label for="node-input-listenValue">
-            <i class="fa fa-play"></i> Start Listening?
+        <label for="node-input-triggerValue">
+            <i class="fa fa-play"></i> Trigger
         </label>
-        <input type="text" id="node-input-listenValue" style="width:60%;" />
-        <input type="hidden" id="node-input-listenType" />
+        <input type="text" id="node-input-triggerValue" style="width:60%;" />
+        <input type="hidden" id="node-input-triggerType" />
         <div style="margin-left:5px;">
-            <small>Evaluates to <strong>true</strong> to start the GetLogs stream, <strong>false</strong> to stop.</small>
+            <small>
+                Evaluates to <strong>true</strong> to start the GetLogs stream and <strong>false</strong> to stop it.
+                If fetching logs for completed tasks or if stopping the stream isn't necessary, leave this set to <strong>true</strong>.
+            </small>
         </div>
     </div>
 

@@ -237,9 +237,6 @@
             }
         };
 
-        /**
-         * Register our Node
-         */
         RED.nodes.registerType('backrest-api', {
             category: 'backrest',
             color: "#00e4d3",
@@ -247,19 +244,19 @@
                 name: { value: "" },
                 config: { type: "backrest-config", required: true },
                 endpoint: { value: "/v1.Backrest/GetOperations" },
+
+                // Input typed property
                 inputType: { value: "msg", required: false },
-                inputValue: { value: "payload", required: false }
+                inputValue: { value: "payload", required: false },
+
+                // New Output typed property
+                outputType: { value: "msg", required: false },
+                outputValue: { value: "payload", required: false }
             },
             inputs: 1,
             outputs: 1,
             icon: "node-red-contrib-backrest-logo.png",
             paletteLabel: "API",
-            /**
-             * Dynamically sets the node label:
-             *  - If user manually provided `this.name`, use that
-             *  - Otherwise, use the `label` from `apiDetails[this.endpoint]`
-             *  - Fallback to "Backrest API" if none found
-             */
             label: function () {
                 if (this.name) {
                     return this.name;
@@ -272,87 +269,107 @@
             },
 
             oneditprepare: function () {
-
-                // 1) Clear any pre-existing <option> elements (from the HTML template)
-                // 2) Dynamically build them from our `apiDetails` object
                 const $endpointSelect = $("#node-input-endpoint").empty();
                 Object.entries(apiDetails).forEach(([endpoint, info]) => {
                     $endpointSelect.append(
                         $("<option>").val(endpoint).text(info.label)
                     );
                 });
-
-                // Set the select box to the current endpoint
                 $endpointSelect.val(this.endpoint);
 
-                // Initialize TypedInput for Input Configuration
                 $("#node-input-input").typedInput({
-                    types: ['msg', 'flow', 'global', 'jsonata', 'json']
-                })
-                    .typedInput('value', this.inputValue || "payload")
-                    .typedInput('type', this.inputType || "msg");
+                    types: ['msg','flow','global','jsonata','json'],
+                    typeField: "#node-input-inputType"
+                });
+                $("#node-input-input").typedInput("type", this.inputType || "msg");
+                $("#node-input-input").typedInput("value", this.inputValue || "payload");
 
-                // Handle updating the description when the user changes endpoints
-                $endpointSelect.on("change", updateAPIDescriptionAndToggleInput);
-                updateAPIDescriptionAndToggleInput(); // Initial update on load
+                $("#node-input-output").typedInput({
+                    types: ['msg','flow','global'],
+                    typeField: "#node-input-outputType"
+                });
+                $("#node-input-output").typedInput("type", this.outputType || "msg");
+                $("#node-input-output").typedInput("value", this.outputValue || "payload");
 
-                function updateAPIDescriptionAndToggleInput() {
+                $endpointSelect.on("change", updateAPIDescription);
+                updateAPIDescription();
+
+                function updateAPIDescription() {
                     const selectedAPI = $endpointSelect.val();
                     const apiInfo = apiDetails[selectedAPI];
-                    if (apiInfo) {
-                        let inputExampleHTML = '';
-                        if (apiInfo.input.type !== "none" && apiInfo.input.example) {
-                            inputExampleHTML = `<pre>${JSON.stringify(apiInfo.input.example, null, 4)}</pre>`;
-                        } else if (apiInfo.input.type === "none") {
-                            inputExampleHTML = `<p><strong>No input required.</strong></p>`;
-                        }
-
-                        $("#selected-api-description").html(`
+                    if (!apiInfo) return;
+                    let inputExampleHTML = '';
+                    if (apiInfo.input && apiInfo.input.type !== "none" && apiInfo.input.example) {
+                        inputExampleHTML = `<pre>${JSON.stringify(apiInfo.input.example, null, 4)}</pre>`;
+                    } else if (apiInfo.input && apiInfo.input.type === "none") {
+                        inputExampleHTML = `<p><strong>No input required.</strong></p>`;
+                    }
+                    $("#selected-api-description").html(`
                         <p><strong>Description:</strong> ${apiInfo.description}</p>
                         <div><strong>Input Example:</strong> ${inputExampleHTML}</div>
-                        <div><strong>Output Example:</strong> ${apiInfo.output.description}</div>
+                        <div><strong>Output:</strong> ${apiInfo.output.description}</div>
                     `);
-
-                        // Toggle input config row depending on input type
-                        if (apiInfo.input.type === "none") {
-                            $("#input-config-row").hide();
-                        } else {
-                            $("#input-config-row").show();
-                        }
-                    }
                 }
             },
 
             oneditsave: function () {
-                // Save TypedInput configuration
-                this.inputType = $("#node-input-input").typedInput('type');
-                this.inputValue = $("#node-input-input").typedInput('value');
+                this.inputType = $("#node-input-input").typedInput("type");
+                this.inputValue = $("#node-input-input").typedInput("value");
+                this.outputType = $("#node-input-output").typedInput("type");
+                this.outputValue = $("#node-input-output").typedInput("value");
             }
         });
-
     })();
 </script>
 
-
 <script type="text/html" data-template-name="backrest-api">
     <div class="form-row">
-        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <label for="node-input-name">
+            <i class="fa fa-tag"></i> Name
+        </label>
         <input type="text" id="node-input-name" placeholder="Node Name" />
     </div>
+
     <div class="form-row">
-        <label for="node-input-config"><i class="fa fa-cog"></i> Backrest Server</label>
+        <label for="node-input-config">
+            <i class="fa fa-server"></i> Backrest Server
+        </label>
         <input type="text" id="node-input-config" />
     </div>
+
     <div class="form-row">
-        <label for="node-input-endpoint"><i class="fa fa-path"></i> API Endpoint</label>
+        <label for="node-input-endpoint">
+            <i class="fa fa-database"></i> API Endpoint
+        </label>
         <select id="node-input-endpoint"></select>
     </div>
+
     <div class="form-row" id="input-config-row">
-        <label for="node-input-input"><i class="fa fa-input"></i> Input</label>
-        <input type="text" id="node-input-input" />
+        <label for="node-input-input">
+            <i class="fa fa-sign-in"></i> Input
+        </label>
+        <input type="text" id="node-input-input" style="width: 60%;" />
+        <input type="hidden" id="node-input-inputType" />
+        <div style="margin-left: 5px;">
+            <small>Property containing data for the selected endpoint.</small>
+        </div>
     </div>
+
+    <div class="form-row">
+        <label for="node-input-output">
+            <i class="fa fa-sign-out"></i> Output
+        </label>
+        <input type="text" id="node-input-output" style="width: 60%;" />
+        <input type="hidden" id="node-input-outputType" />
+        <div style="margin-left: 5px;">
+            <small>Where to store the response (default: <code>msg.payload</code>).</small>
+        </div>
+    </div>
+
     <div class="form-row" id="api-description">
-        <div style="font-weight:800;"><i class="fa fa-info-circle"></i> Selected API Info</div>
+        <div style="font-weight: 800;">
+            <i class="fa fa-info-circle"></i> Selected API Info
+        </div>
         <div id="selected-api-description" style="margin-top:5px;"></div>
     </div>
 </script>
@@ -365,55 +382,29 @@
         <dt class="optional">
             msg.payload <span class="property-type">object | null</span>
         </dt>
-        <dd>Input data for the API endpoint. The structure depends on the selected endpoint. If the endpoint requires no input, this can be omitted.</dd>
-    </dl>
-
-    <h3>Properties</h3>
-    <dl class="message-properties">
-        <dt>Backrest Server
-            <span class="property-type">config</span>
-        </dt>
-        <dd>Configuration for connecting to the Backrest server.</dd>
-
-        <dt>API Endpoint
-            <span class="property-type">select</span>
-        </dt>
-        <dd>The Backrest API endpoint to call. Each endpoint has specific input requirements and output formats.</dd>
-
-        <dt class="optional">Input
-            <span class="property-type">msg | flow | global | json</span>
-        </dt>
-        <dd>Property that contains the input data for the API call. Only shown for endpoints that accept input.</dd>
+        <dd>Input data for the API endpoint. Can be set via the typed input property in the node config.</dd>
     </dl>
 
     <h3>Outputs</h3>
     <dl class="message-properties">
-        <dt>
-            msg.payload <span class="property-type">object | null</span>
-        </dt>
-        <dd>The response from the Backrest server. Structure varies by endpoint.</dd>
-
-        <dt>
-            msg.error <span class="property-type">string</span>
-        </dt>
-        <dd>Error message if the API call fails.</dd>
+        <dt>dynamic (by default)</dt>
+        <dd>The response from the Backrest server. Structure varies by endpoint. This can be configured to go to <strong>msg, flow, or global</strong> context.</dd>
     </dl>
 
-    <h3>Details</h3>
-    <p>This node provides access to the following Backrest API endpoints:</p>
-    <ul>
-        <li><code>Get Operations</code> - Fetch the list of operations from the server</li>
-        <li><code>Cancel Operation</code> - Attempt to cancel a running operation</li>
-        <li><code>Get Download URL</code> - Get a signed URL for downloading operation results</li>
-        <li><code>Start Backup</code> - Schedule a new backup operation</li>
-        <li><code>Restore Snapshot</code> - Schedule a restore operation</li>
-        <li><code>Forget Snapshot</code> - Schedule a forget operation</li>
-        <li><code>Run Repository Task</code> - Execute repository maintenance tasks</li>
-        <li><code>List Snapshots</code> - List available snapshots</li>
-        <li><code>List Files in Snapshot</code> - Browse files within a snapshot</li>
-        <li><code>Get/Set Config</code> - Manage server configuration</li>
-        <li><code>Get Summary Dashboard</code> - Retrieve system overview</li>
-    </ul>
+    <h3>Properties</h3>
+    <dl class="message-properties">
+        <dt>Backrest Server <span class="property-type">config</span></dt>
+        <dd>Configuration for connecting to the Backrest server.</dd>
+
+        <dt>API Endpoint <span class="property-type">select</span></dt>
+        <dd>The Backrest API endpoint to call. Each endpoint has specific input requirements and output formats.</dd>
+
+        <dt>Input Property <span class="property-type">typed input</span></dt>
+        <dd>Where the node reads input data. If the selected endpoint requires no input, this can be ignored.</dd>
+
+        <dt>Output Property <span class="property-type">typed input</span></dt>
+        <dd>Where the node stores the API response. Defaults to <code>msg.payload</code>, but can be a flow/global variable.</dd>
+    </dl>
 
     <h3>References</h3>
     <ul>
