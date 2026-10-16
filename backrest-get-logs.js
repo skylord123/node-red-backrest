@@ -1,34 +1,4 @@
-const grpc = require("@grpc/grpc-js");
-const protoLoader = require("@grpc/proto-loader");
-const path = require("path");
-
 module.exports = function (RED) {
-    // Cache proto definitions
-    let protoDescriptor = null;
-    function loadProtoDefinitions() {
-        if (protoDescriptor) return protoDescriptor;
-        const PROTO_PATH = path.join(__dirname, "proto", "v1", "service.proto");
-        const packageDef = protoLoader.loadSync(PROTO_PATH, {
-            keepCase: true,
-            longs: String,
-            enums: String,
-            defaults: true,
-            oneofs: true,
-            includeDirs: [path.join(__dirname, "proto")]
-        });
-        protoDescriptor = grpc.loadPackageDefinition(packageDef);
-        return protoDescriptor;
-    }
-
-    function createAuthMetadata(username, password) {
-        const metadata = new grpc.Metadata();
-        if (username && password) {
-            const authString = Buffer.from(`${username}:${password}`).toString("base64");
-            metadata.add("Authorization", `Basic ${authString}`);
-        }
-        return metadata;
-    }
-
     // Utility to promisify RED.util.evaluateNodeProperty.
     function evaluateProperty(prop, type, node, msg) {
         return new Promise((resolve, reject) => {
@@ -101,20 +71,12 @@ module.exports = function (RED) {
 
         async startLogsStream(logRef, send) {
             this.stopStream(); // Stop any existing stream
-            const proto = loadProtoDefinitions();
-            const backrestPackage = proto.v1;
-            if (!backrestPackage || !backrestPackage.Backrest) {
-                throw new Error("Could not load the Backrest service from proto definitions.");
+            const client = this.serverConfig.client;
+            if (!client) {
+                throw new Error("No gRPC client available; check the Backrest server configuration.");
             }
 
-            // Create insecure (or SSL) client – strip the protocol from the URL
-            const target = this.serverConfig.backrest_url.replace(/^https?:\/\//, "");
-            const client = new backrestPackage.Backrest(target, grpc.credentials.createInsecure());
-
-            // Build metadata for authentication
-            const metadata = createAuthMetadata(this.serverConfig.username, this.serverConfig.password);
-
-            this.activeCall = client.GetLogs({ ref: logRef }, metadata);
+            this.activeCall = client.GetLogs({ ref: logRef }, this.serverConfig.createAuthMetadata());
 
             // Register stream events
             this.activeCall.on("data", (chunk) => {

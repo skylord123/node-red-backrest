@@ -108,7 +108,7 @@
         <dt>Backrest URL
             <span class="property-type">string</span>
         </dt>
-        <dd>URL of your Backrest server (e.g., http://localhost:9898).</dd>
+        <dd>URL of your Backrest server (e.g., http://localhost:9898). Use an https:// URL when Backrest is behind a reverse proxy with TLS; the proxy must support HTTP/2 for Operation Events and Get Logs to work. For a self-signed certificate, start Node-RED with <code>NODE_EXTRA_CA_CERTS</code> pointing at the CA certificate.</dd>
 
         <dt class="optional">Username
             <span class="property-type">string</span>

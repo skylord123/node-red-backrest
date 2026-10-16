@@ -33,11 +33,18 @@ module.exports = function(RED) {
     }
 
     /**
-     * Utility: Strip http:// or https:// from the URL for gRPC usage.
+     * Utility: Turn the Backrest URL into a gRPC target (host:port) and whether to use TLS.
+     * https:// URLs use TLS (port 443 by default), anything else is plaintext (port 80 by default).
      */
-    function stripHttpPrefix(urlString) {
-        if (!urlString) return "";
-        return urlString.replace(/^https?:\/\//, "");
+    function parseGrpcTarget(urlString) {
+        if (!urlString) return { target: "", secure: false };
+        if (!/^https?:\/\//.test(urlString)) {
+            return { target: urlString, secure: false };
+        }
+        const url = new URL(urlString);
+        const secure = url.protocol === "https:";
+        const port = url.port || (secure ? "443" : "80");
+        return { target: `${url.hostname}:${port}`, secure };
     }
 
     /**
@@ -89,7 +96,7 @@ module.exports = function(RED) {
     }
 
     /**
-     * Set up the gRPC client (insecure example). For TLS, replace createInsecure with createSsl.
+     * Set up the gRPC client, using TLS when the Backrest URL is https://.
      */
     BackrestConfigNode.prototype.setupClient = function() {
         const proto = loadProtoDefinitions();
@@ -98,13 +105,26 @@ module.exports = function(RED) {
             this.error("Could not load the Backrest service from proto definitions.");
             return;
         }
-        const grpcTarget = stripHttpPrefix(this.backrest_url);
-        this.log(`Creating gRPC client for Backrest at: ${grpcTarget}`);
+        let grpcTarget;
+        try {
+            grpcTarget = parseGrpcTarget(this.backrest_url);
+        } catch (err) {
+            this.error(`Invalid Backrest URL "${this.backrest_url}": ${err.message}`);
+            return;
+        }
+        this.log(`Creating gRPC client for Backrest at: ${grpcTarget.target}${grpcTarget.secure ? " (TLS)" : ""}`);
 
         this.client = new backrestPackage.Backrest(
-            grpcTarget,
-            grpc.credentials.createInsecure()
+            grpcTarget.target,
+            grpcTarget.secure ? grpc.credentials.createSsl() : grpc.credentials.createInsecure()
         );
+    };
+
+    /**
+     * Build gRPC metadata carrying this server's credentials.
+     */
+    BackrestConfigNode.prototype.createAuthMetadata = function() {
+        return createAuthMetadata(this.username, this.password);
     };
 
     /**
@@ -212,7 +232,7 @@ module.exports = function(RED) {
                 this.error("OperationEvents stream timed out.");
                 break;
             case ERROR_CODES.UNAVAILABLE:
-                this.error("OperationEvents stream: server unavailable.");
+                this.error(`OperationEvents stream: server unavailable (${err.details}).`);
                 break;
             default:
                 this.error(`OperationEvents stream error: ${err.message}`);
