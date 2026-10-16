@@ -129,12 +129,13 @@
         <dt>
             msg.payload <span class="property-type">object</span>
         </dt>
-        <dd>Operation event data containing details about the operation's status, type, and progress. The structure includes:
+        <dd>An operation event from Backrest, using the same camelCase property names as the API node. <code>event</code> says which kind it is:
             <ul>
-                <li><code>type</code> - Event type (created, updated, deleted)</li>
-                <li><code>operation</code> - Details about the operation</li>
-                <li><code>timestamp</code> - When the event occurred</li>
+                <li><code>createdOperations</code> - <code>payload.createdOperations.operations</code> holds the new operations</li>
+                <li><code>updatedOperations</code> - <code>payload.updatedOperations.operations</code> holds the changed operations (including progress updates)</li>
+                <li><code>deletedOperations</code> - <code>payload.deletedOperations.values</code> holds the IDs of removed operations</li>
             </ul>
+            Each operation has <code>id</code>, <code>planId</code>, <code>repoId</code>, <code>status</code> and <code>op</code>, the name of the field holding the operation's details (for example <code>operationBackup</code>).
         </dd>
     </dl>
 

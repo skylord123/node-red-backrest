@@ -24,13 +24,13 @@ describe("Operation Events node", function () {
         await new Promise(r => setTimeout(r, 500)); // let the stream connect
         await server.raw("Backup", { value: "test-plan", dryRun: true });
 
-        const created = await out.next(m => m.payload.created_operations &&
-            m.payload.created_operations.operations.some(o => o.op === "operation_backup"));
-        const op = created.payload.created_operations.operations.find(o => o.op === "operation_backup");
-        assert.strictEqual(op.plan_id, "test-plan");
-        assert.strictEqual(op.operation_backup.dry_run, true);
-        await out.next(m => m.payload.updated_operations &&
-            m.payload.updated_operations.operations.some(o => o.id === op.id && o.status === "STATUS_SUCCESS"));
+        const created = await out.next(m => m.payload.createdOperations &&
+            m.payload.createdOperations.operations.some(o => o.op === "operationBackup"));
+        const op = created.payload.createdOperations.operations.find(o => o.op === "operationBackup");
+        assert.strictEqual(op.planId, "test-plan");
+        assert.strictEqual(op.operationBackup.dryRun, true);
+        await out.next(m => m.payload.updatedOperations &&
+            m.payload.updatedOperations.operations.some(o => o.id === op.id && o.status === "STATUS_SUCCESS"));
     });
 
     it("subscribes and unsubscribes on trigger messages", async function () {
@@ -44,7 +44,7 @@ describe("Operation Events node", function () {
         node.receive({ payload: true });
         await new Promise(r => setTimeout(r, 500));
         await server.raw("Backup", { value: "test-plan", dryRun: true });
-        await out.next(m => m.payload.created_operations);
+        await out.next(m => m.payload.createdOperations);
 
         node.receive({ payload: false });
         await new Promise(r => setTimeout(r, 200));

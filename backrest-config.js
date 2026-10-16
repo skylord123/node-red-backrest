@@ -23,7 +23,7 @@ module.exports = function(RED) {
         if (protoDescriptor) return protoDescriptor;
         const PROTO_PATH = path.join(__dirname, "proto", "v1", "service.proto");
         const packageDef = protoLoader.loadSync(PROTO_PATH, {
-            keepCase: true,
+            keepCase: false, // camelCase field names, the same as the Backrest JSON API
             longs: String,
             enums: String,
             defaults: true,
