@@ -8,6 +8,10 @@
   },
   "author": "skylord123",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/skylord123/node-red-backrest/issues"
+  },
+  "homepage": "https://github.com/skylord123/node-red-backrest",
   "keywords": [
     "node-red",
     "backrest",
