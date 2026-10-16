@@ -70,12 +70,12 @@ module.exports = function (RED) {
                 output: { type: "object", description: "Contains the path and an array of file entries." }
             },
             "/v1.Backrest/Backup": {
-                description: "Schedule a backup operation.",
-                input: { type: "object", example: { value: "plan-id" } },
+                description: "Schedule a backup operation, optionally as a dry run.",
+                input: { type: "object", example: { value: "plan-id", dryRun: false } },
                 output: { type: "none", description: "No response body, indicates successful queueing." }
             },
             "/v1.Backrest/DoRepoTask": {
-                description: "Schedule a repository task (prune, stats, etc.).",
+                description: "Schedule a repository task (index snapshots, prune, check, stats, unlock or forget).",
                 input: { type: "object", example: { repoId: "repo-id", task: "TASK_PRUNE" } },
                 output: { type: "object", description: "Object with operationId of the scheduled task." }
             },

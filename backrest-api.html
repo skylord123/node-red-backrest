@@ -47,11 +47,12 @@
             },
             "/v1.Backrest/Backup": {
                 label: "Start Backup",
-                description: "Schedule a backup operation.",
+                description: "Schedule a backup of a plan. value is the plan ID. Set dryRun to true to simulate the backup without creating a snapshot.",
                 input: {
                     type: "object",
                     example: {
-                        "value": "plan-id"
+                        "value": "plan-id",
+                        "dryRun": false
                     }
                 },
                 output: {
@@ -92,7 +93,7 @@
             },
             "/v1.Backrest/DoRepoTask": {
                 label: "Run Repository Task",
-                description: "Schedule a repository task (e.g., prune, stats).",
+                description: "Schedule a repository task. task is one of TASK_INDEX_SNAPSHOTS, TASK_PRUNE, TASK_CHECK, TASK_STATS, TASK_UNLOCK or TASK_FORGET (TASK_FORGET needs a forget policy on the repository).",
                 input: {
                     type: "object",
                     example: {
