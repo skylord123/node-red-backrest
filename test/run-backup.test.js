@@ -8,7 +8,7 @@ describe("Run Backup node", function () {
     before(async function () {
         server = await getBackrest();
         await server.addPlan({ id: "broken-plan", repo: "test-repo", paths: ["/does-not-exist"] });
-        nr.withNodes(require("@node-red/nodes/core/common/25-catch.js"));
+        nr.withNodes(nr.coreNode("common/25-catch.js"));
     });
 
     after(function () {

@@ -1,6 +1,15 @@
 // Helpers for running our nodes inside node-red-node-test-helper.
+// Set NODE_RED_PATH to a Node-RED install to test against another version.
+const path = require("path");
 const helper = require("node-red-node-test-helper");
-helper.init(require.resolve("node-red"));
+const NODE_RED = process.env.NODE_RED_PATH ? path.resolve(process.env.NODE_RED_PATH) : path.dirname(require.resolve("node-red/package.json"));
+helper.init(require.resolve(NODE_RED));
+
+/** A core node module (such as "common/25-catch.js") from the same Node-RED install. */
+function coreNode(file) {
+    const nodesDir = path.dirname(require.resolve("@node-red/nodes/package.json", { paths: [NODE_RED] }));
+    return require(path.join(nodesDir, "core", file));
+}
 
 const NODES = [
     require("../../backrest-config.js"),
@@ -85,4 +94,4 @@ function catchNodes(z = "f1") {
     ];
 }
 
-module.exports = { helper, load, withNodes, getNode, collect, send, catchNodes };
+module.exports = { helper, load, withNodes, getNode, collect, send, catchNodes, coreNode };

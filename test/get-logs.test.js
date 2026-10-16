@@ -8,8 +8,8 @@ describe("Get Logs node", function () {
     before(async function () {
         server = await getBackrest();
         nr.withNodes(
-            require("@node-red/nodes/core/common/25-catch.js"),
-            require("@node-red/nodes/core/common/24-complete.js")
+            nr.coreNode("common/25-catch.js"),
+            nr.coreNode("common/24-complete.js")
         );
         const { operationId } = await server.raw("RunCommand", { repoId: "test-repo", command: "snapshots" });
         commandOp = await server.waitForOperation(operationId);

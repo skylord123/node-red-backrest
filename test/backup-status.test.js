@@ -11,7 +11,7 @@ describe("Backup Status node", function () {
         await server.addPlan({ id: "status-broken", repo: "test-repo", paths: ["/does-not-exist"] });
         await server.raw("Backup", { value: "status-ok" });
         await server.raw("Backup", { value: "status-broken" }).catch(() => {}); // fails, as intended
-        nr.withNodes(require("@node-red/nodes/core/common/25-catch.js"));
+        nr.withNodes(nr.coreNode("common/25-catch.js"));
     });
 
     after(function () {

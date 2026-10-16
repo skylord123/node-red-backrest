@@ -18,6 +18,7 @@
     "restic"
   ],
   "node-red": {
+    "version": ">=4.0.0",
     "nodes": {
       "backrest-config": "backrest-config.js",
       "backrest-api": "backrest-api.js",
@@ -47,5 +48,8 @@
     "proto/",
     "LICENSE",
     "README.md"
-  ]
+  ],
+  "engines": {
+    "node": ">=18"
+  }
 }

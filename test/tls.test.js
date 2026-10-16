@@ -14,8 +14,8 @@ describe("HTTPS Backrest URLs", function () {
         caFile = path.join(fs.mkdtempSync(path.join(os.tmpdir(), "nrb-ca-")), "root.crt");
         fs.writeFileSync(caFile, server.tlsCa);
         nr.withNodes(
-            require("@node-red/nodes/core/network/05-tls.js"),
-            require("@node-red/nodes/core/common/25-catch.js")
+            nr.coreNode("network/05-tls.js"),
+            nr.coreNode("common/25-catch.js")
         );
     });
 
@@ -26,8 +26,8 @@ describe("HTTPS Backrest URLs", function () {
     function flow(tls) {
         return [
             { id: "f1", type: "tab" },
-            { id: "tls", type: "tls-config", certType: "files", ...tls },
-            { id: "cfg", type: "backrest-config", name: "tls", tls: "tls", autoReconnect: true, reconnectInterval: "500" },
+            { id: "tls1", type: "tls-config", certType: "files", cert: "", key: "", ca: "", servername: "", ...tls },
+            { id: "cfg", type: "backrest-config", name: "https server", tls: "tls1", autoReconnect: true, reconnectInterval: "500" },
             {
                 id: "api", type: "backrest-api", z: "f1", config: "cfg", endpoint: "/v1.Backrest/GetConfig",
                 inputType: "msg", inputValue: "payload", outputType: "msg", outputValue: "payload", wires: [["out"]]

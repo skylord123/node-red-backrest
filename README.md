@@ -62,4 +62,4 @@ npm install
 npm test
 ```
 
-They start a temporary Backrest container (`garethgeorge/backrest:v1.14.1` by default, override with `BACKREST_IMAGE`) and remove it when they finish.
+They start a temporary Backrest container (`garethgeorge/backrest:v1.14.1` by default, override with `BACKREST_IMAGE`) and remove it when they finish. They use the Node-RED version from the dev dependencies; set `NODE_RED_PATH` to another Node-RED install to test against it.

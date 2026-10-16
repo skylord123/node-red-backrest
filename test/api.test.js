@@ -2,7 +2,7 @@ const assert = require("assert");
 const { getBackrest } = require("./fixtures/backrest");
 const nr = require("./fixtures/nodered");
 
-nr.withNodes(require("@node-red/nodes/core/common/25-catch.js"));
+nr.withNodes(nr.coreNode("common/25-catch.js"));
 
 const ENDPOINTS = [
     "GetOperations", "GetConfig", "SetConfig", "SetupSftp", "CheckRepoExists", "AddRepo",
