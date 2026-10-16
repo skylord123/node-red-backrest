@@ -1,6 +1,6 @@
 {
   "name": "@skylord123/node-red-contrib-backrest",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Node-RED nodes for interacting with Backrest, a restic-powered backup management tool.",
   "main": "backrest-config.js",
   "scripts": {
