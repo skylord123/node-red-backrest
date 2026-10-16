@@ -42,6 +42,31 @@ function withNodes(...modules) {
     extraNodes = modules;
 }
 
+// The test helper gives `http in` nodes an Express app that isn't served anywhere.
+// This module captures it on every load so tests can serve it themselves.
+let httpNodeApp = null;
+function captureHttpNode(RED) {
+    httpNodeApp = RED.httpNode;
+}
+
+/**
+ * Serve the `http in` routes of the loaded flow on an address Docker containers can
+ * reach. Load the flow with withNodes(..., captureHttpNode) first. Returns { port, close() }.
+ */
+async function serveHttpNodes() {
+    if (!httpNodeApp) throw new Error("captureHttpNode wasn't loaded");
+    const app = httpNodeApp;
+    const server = require("http").createServer((req, res) => app(req, res));
+    await new Promise(resolve => server.listen(0, "0.0.0.0", resolve));
+    return {
+        port: server.address().port,
+        close: () => new Promise(resolve => {
+            server.closeAllConnections();
+            server.close(() => resolve());
+        })
+    };
+}
+
 function getNode(id) {
     return helper.getNode(id);
 }
@@ -94,4 +119,4 @@ function catchNodes(z = "f1") {
     ];
 }
 
-module.exports = { helper, load, withNodes, getNode, collect, send, catchNodes, coreNode };
+module.exports = { helper, load, withNodes, getNode, collect, send, catchNodes, coreNode, captureHttpNode, serveHttpNodes };

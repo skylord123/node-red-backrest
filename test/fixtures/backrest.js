@@ -66,6 +66,8 @@ class BackrestFixture {
         // Backrest runs as root in the container; make the mounted dirs writable either way.
         fs.chmodSync(this.dir, 0o777);
         docker("run", "-d", "--name", name, "--network", this.network, "--network-alias", "backrest",
+            // lets hooks call back into the Node-RED under test
+            "--add-host", "host.docker.internal:host-gateway",
             "-p", "127.0.0.1::9898",
             "-e", "BACKREST_PORT=0.0.0.0:9898",
             "-e", "BACKREST_DATA=/data",

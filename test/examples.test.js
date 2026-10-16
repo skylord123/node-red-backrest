@@ -23,6 +23,11 @@ describe("Example flows", function () {
 
             it("uses the shared Example server config", function () {
                 const configs = nodes.filter(n => n.type === "backrest-config");
+                const users = nodes.filter(n => n.type.startsWith("backrest-") && n.type !== "backrest-config");
+                if (!users.length) {
+                    assert.deepStrictEqual(configs, [], "no unused server config");
+                    return;
+                }
                 assert.deepStrictEqual(configs.map(c => c.id), ["06bd2857df140cc4"]);
                 assert.ok(!configs[0].credentials, "no credentials in examples");
                 for (const n of nodes.filter(n => n.type.startsWith("backrest-") && n.type !== "backrest-config")) {
