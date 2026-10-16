@@ -110,3 +110,19 @@ describe("Operation Events node", function () {
         assert.strictEqual(out.messages.length, count, "no events after unsubscribing");
     });
 });
+
+describe("Server config node", function () {
+    let server;
+
+    before(async function () {
+        server = await getBackrest();
+    });
+
+    it("closes its connection when it is stopped", async function () {
+        await nr.load([{ id: "cfg", type: "backrest-config", name: "test" }], server);
+        const client = nr.getNode("cfg").client;
+        await nr.helper.unload();
+        const state = client.getChannel().getConnectivityState(false);
+        assert.strictEqual(state, 4, `channel state ${state} (4 is SHUTDOWN)`);
+    });
+});

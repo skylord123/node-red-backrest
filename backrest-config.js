@@ -94,12 +94,15 @@ module.exports = function(RED) {
         this.reconnectAttempts = 0;
         this.manualStop = false;
 
-        // Create the gRPC client (insecure in this example)
         this.setupClient();
 
-        // When this config node is closed, stop the stream.
+        // When this config node is closed, stop the stream and close the connection.
         this.on("close", () => {
             this.stopOperationEventsStream();
+            if (this.client) {
+                this.client.close();
+                this.client = null;
+            }
         });
     }
 
