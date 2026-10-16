@@ -21,7 +21,7 @@ module.exports = function (RED) {
         const apiMap = {
             "/v1.Backrest/GetOperations": {
                 description: "Fetch the list of operations from the Backrest server.",
-                input: { type: "object", example: { lastN: 1000, selector: { repoId: "repo-id" } } },
+                input: { type: "object", example: { lastN: 1000, selector: { repoGuid: "repo-guid" } } },
                 output: { type: "array", description: "Array of operations with details (type, status, etc.)." }
             },
             "/v1.Backrest/GetConfig": {

@@ -110,7 +110,7 @@
     "config": "06bd2857df140cc4",
     "endpoint": "/v1.Backrest/GetOperations",
     "inputType": "jsonata",
-    "inputValue": "{\t   \"lastN\": 1000,\t    \"selector\": {\t       \"repoId\": repo.id\t    }\t}\t",
+    "inputValue": "{\t   \"lastN\": 1000,\t    \"selector\": {\t       \"repoGuid\": repo.guid\t    }\t}\t",
     "x": 620,
     "y": 520,
     "wires": [

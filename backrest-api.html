@@ -4,13 +4,13 @@
         const apiDetails = {
             "/v1.Backrest/GetOperations": {
                 label: "Get Operations",
-                description: "Fetch the list of operations from the Backrest server.",
+                description: "Fetch operations from the Backrest server. A selector is required and can filter by ids, repoGuid (the guid of a repo from Get Config, not its ID), planId, snapshotId, flowId, instanceId and modnoGte (only operations changed at or after this modno). Use an empty selector to match all operations.",
                 input: {
                     type: "object",
                     example: {
                         "lastN": 1000,
                         "selector": {
-                            "repoId": "repo-id"
+                            "repoGuid": "repo-guid"
                         }
                     }
                 },
