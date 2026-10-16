@@ -443,7 +443,7 @@
         "config": "06bd2857df140cc4",
         "endpoint": "/v1.Backrest/Backup",
         "inputType": "jsonata",
-        "inputValue": "{\t    \"value\": payload.plans[$$.repo_index].id\t}\t",
+        "inputValue": "{\t    \"value\": payload.plans[$$.plan_index].id\t}\t",
         "x": 490,
         "y": 280,
         "wires": [
@@ -460,8 +460,8 @@
         "name": "",
         "props": [
             {
-                "p": "repo_index",
-                "v": "2",
+                "p": "plan_index",
+                "v": "0",
                 "vt": "num"
             }
         ],
