@@ -1,158 +1,230 @@
+<script src="resources/@skylord123/node-red-contrib-backrest/backrest-editor.js"></script>
 <script type="text/javascript">
-    RED.nodes.registerType('backrest-operation-events', {
-        category: 'backrest',
-        color: "#00e4d3",
-        defaults: {
-            name: { value: "" },
-            config: { type: "backrest-config", required: true },
-            mode: { value: "always", required: true },
-            triggerValue: { value: "payload", required: false },
-            triggerType: { value: "msg", required: false }
-        },
-        inputs: 1,
-        outputs: 1,
-        icon: "node-red-contrib-backrest-logo.png",
-        paletteLabel: "Operation Events",
-        label: function() {
-            return this.name || "Operation Events";
-        },
-        oneditprepare: function() {
-            // Setup typed input for "triggerValue"
-            $("#node-input-triggerValue").typedInput({
-                types: ["msg", "flow", "global", "str", "jsonata", "bool", "num"],
-                typeField: "#node-input-triggerType"
-            });
+    (function () {
+        const OPERATION_TYPES = [
+            ["backup", "Backup"],
+            ["forget", "Forget"],
+            ["prune", "Prune"],
+            ["check", "Check"],
+            ["restore", "Restore"],
+            ["stats", "Stats"],
+            ["index-snapshot", "Index snapshots"],
+            ["command", "Restic command"],
+            ["hook", "Hook"]
+        ];
 
-            // Handle mode selection changes to update help text
-            $("#node-input-mode").on("change", function () {
-                const selectedMode = $(this).val();
-                let helpText = "";
+        RED.nodes.registerType('backrest-operation-events', {
+            category: 'backrest',
+            color: "#00e4d3",
+            defaults: {
+                name: { value: "" },
+                config: { type: "backrest-config", required: true },
+                mode: { value: "always", required: true },
+                triggerValue: { value: "payload", required: false },
+                triggerType: { value: "msg", required: false },
+                output: { value: "operation" },
+                when: { value: "status" },
+                planValue: { value: "" },
+                planType: { value: "backrest-any" },
+                repoValue: { value: "" },
+                repoType: { value: "backrest-any" },
+                types: { value: [] }
+            },
+            inputs: 1,
+            outputs: 1,
+            icon: "node-red-contrib-backrest-logo.png",
+            paletteLabel: "Operation Events",
+            label: function () {
+                return this.name || "Operation Events";
+            },
+            oneditprepare: function () {
+                // Nodes from before 1.0 may have no mode (they subscribed on trigger)
+                // and no output setting (they sent raw events).
+                if (this.mode === undefined) $("#node-input-mode").val("manual");
+                if (this.output === undefined) $("#node-input-output").val("event");
 
-                if (selectedMode === "always") {
-                    helpText = "Node will automatically subscribe to operation events when deployed and maintain " +
-                        "the subscription until the node is stopped or removed. Incoming messages are ignored.";
-                    $("#trigger-input-row").hide();
-                } else {
-                    helpText = "Node will subscribe to operation events when it receives a message and the trigger " +
-                        "evaluates to true. Conversely, it will unsubscribe when a message is received and the trigger evaluates to false.";
-                    $("#trigger-input-row").show();
-                }
+                $("#node-input-triggerValue").typedInput({
+                    types: ["msg", "flow", "global", "str", "jsonata", "bool", "num"],
+                    typeField: "#node-input-triggerType"
+                });
 
-                $("#mode-help-text").text(helpText);
-            });
+                BackrestEditor.picker({
+                    input: "#node-input-planValue",
+                    typeField: "#node-input-planType",
+                    kind: "plan",
+                    any: "Any plan",
+                    types: ["str", "flow", "global", "env"],
+                    config: "#node-input-config",
+                    value: this.planValue,
+                    type: this.planType
+                });
+                BackrestEditor.picker({
+                    input: "#node-input-repoValue",
+                    typeField: "#node-input-repoType",
+                    kind: "repo",
+                    any: "Any repository",
+                    types: ["str", "flow", "global", "env"],
+                    config: "#node-input-config",
+                    value: this.repoValue,
+                    type: this.repoType
+                });
 
-            // Trigger initial help text update
-            $("#node-input-mode").trigger("change");
-        },
-        oneditsave: function () {
-            // Ensure we store the typed input fields
-            this.triggerValue = $("#node-input-triggerValue").typedInput("value");
-            this.triggerType = $("#node-input-triggerValue").typedInput("type");
-        }
-    });
+                const selected = new Set(this.types || []);
+                const $types = $("#operation-events-types");
+                OPERATION_TYPES.forEach(([value, label]) => {
+                    $('<label style="width:auto; margin-right:12px; white-space:nowrap;"></label>')
+                        .append($('<input type="checkbox" style="width:auto; margin:0 4px 0 0; vertical-align:baseline;">')
+                            .val(value).prop("checked", selected.has(value)))
+                        .append(document.createTextNode(label))
+                        .appendTo($types);
+                });
+
+                $("#node-input-mode").on("change", function () {
+                    const always = $(this).val() === "always";
+                    $("#mode-help-text").text(always
+                        ? "Subscribes when deployed and stays subscribed. Incoming messages are ignored."
+                        : "Subscribes when a message arrives and the trigger is true, and unsubscribes when it is false.");
+                    $("#trigger-input-row").toggle(!always);
+                }).trigger("change");
+
+                $("#node-input-output").on("change", function () {
+                    $(".operation-events-filters").toggle($(this).val() === "operation");
+                }).trigger("change");
+            },
+            oneditsave: function () {
+                this.triggerValue = $("#node-input-triggerValue").typedInput("value");
+                this.triggerType = $("#node-input-triggerValue").typedInput("type");
+                this.planValue = $("#node-input-planValue").typedInput("value");
+                this.planType = $("#node-input-planValue").typedInput("type");
+                this.repoValue = $("#node-input-repoValue").typedInput("value");
+                this.repoType = $("#node-input-repoValue").typedInput("type");
+                this.types = $("#operation-events-types input:checked").map(function () { return this.value; }).get();
+            }
+        });
+    })();
 </script>
 
 <script type="text/html" data-template-name="backrest-operation-events">
     <div class="form-row">
-        <label for="node-input-name">
-            <i class="fa fa-tag"></i> Name
-        </label>
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
         <input type="text" id="node-input-name"/>
     </div>
 
     <div class="form-row">
-        <label for="node-input-config">
-            <i class="fa fa-server"></i> Backrest Server
-        </label>
+        <label for="node-input-config"><i class="fa fa-server"></i> Backrest Server</label>
         <input type="text" id="node-input-config"/>
     </div>
 
     <div class="form-row">
-        <label for="node-input-mode">
-            <i class="fa fa-tasks"></i> Operation Mode
-        </label>
+        <label for="node-input-mode"><i class="fa fa-tasks"></i> Subscribe</label>
         <select id="node-input-mode" style="width:70%;">
-            <option value="always">Always Listening</option>
-            <option value="manual">Subscribe on Trigger</option>
+            <option value="always">Always</option>
+            <option value="manual">On trigger</option>
         </select>
         <div class="form-tips" id="mode-help-text" style="margin-top: 5px;"></div>
     </div>
 
     <div class="form-row" id="trigger-input-row">
-        <label for="node-input-triggerValue">
-            <i class="fa fa-play"></i> Trigger
-        </label>
+        <label for="node-input-triggerValue"><i class="fa fa-play"></i> Trigger</label>
         <input type="text" id="node-input-triggerValue" style="width:60%;"/>
         <input type="hidden" id="node-input-triggerType"/>
-        <div style="margin-left:5px;">
-            <small>The value that controls subscription state when in "Subscribe on Trigger" mode.</small>
-        </div>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-output"><i class="fa fa-sign-out"></i> Output</label>
+        <select id="node-input-output" style="width:70%;">
+            <option value="operation">One message per operation</option>
+            <option value="event">Raw Backrest events</option>
+        </select>
+    </div>
+
+    <div class="form-row operation-events-filters">
+        <label for="node-input-when"><i class="fa fa-filter"></i> Send</label>
+        <select id="node-input-when" style="width:70%;">
+            <option value="status">When an operation starts or its status changes</option>
+            <option value="final">Only when an operation finishes</option>
+            <option value="all">Every update, including progress</option>
+        </select>
+    </div>
+
+    <div class="form-row operation-events-filters">
+        <label for="node-input-planValue"><i class="fa fa-calendar-check-o"></i> Plan</label>
+        <input type="text" id="node-input-planValue" style="width:60%;"/>
+        <input type="hidden" id="node-input-planType"/>
+    </div>
+
+    <div class="form-row operation-events-filters">
+        <label for="node-input-repoValue"><i class="fa fa-database"></i> Repository</label>
+        <input type="text" id="node-input-repoValue" style="width:60%;"/>
+        <input type="hidden" id="node-input-repoType"/>
+    </div>
+
+    <div class="form-row operation-events-filters">
+        <label style="vertical-align:top;"><i class="fa fa-list"></i> Types</label>
+        <div id="operation-events-types" style="display:inline-block; width:70%;"></div>
+        <div class="form-tips" style="margin-top:5px;">Leave all unchecked to get every type of operation.</div>
     </div>
 </script>
 
 <script type="text/html" data-help-name="backrest-operation-events">
-    <p>Subscribes to real-time operation events from a Backrest server. This node allows you to monitor the creation, updates, and completion of operations like backups, restores, and maintenance tasks.</p>
+    <p>Sends real-time updates about Backrest operations, such as backups starting, progressing and finishing.</p>
+
+    <h3>Outputs</h3>
+    <p>With <b>Output</b> set to <code>One message per operation</code>:</p>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">object</span></dt>
+        <dd>The operation, in the same form as the API node's Get Operations. It has <code>id</code>, <code>planId</code>, <code>repoId</code>, <code>status</code>, <code>unixTimeStartMs</code>, <code>unixTimeEndMs</code> and a field with the operation's details, such as <code>operationBackup</code> (named by <code>payload.op</code>). For deleted operations it only has <code>id</code>.</dd>
+
+        <dt>event <span class="property-type">string</span></dt>
+        <dd><code>created</code>, <code>updated</code> or <code>deleted</code>.</dd>
+
+        <dt>operationType <span class="property-type">string</span></dt>
+        <dd><code>backup</code>, <code>forget</code>, <code>prune</code>, <code>check</code>, <code>restore</code>, <code>stats</code>, <code>index-snapshot</code>, <code>command</code> or <code>hook</code>.</dd>
+
+        <dt>status <span class="property-type">string</span></dt>
+        <dd>The operation's status, such as <code>STATUS_INPROGRESS</code>, <code>STATUS_SUCCESS</code>, <code>STATUS_WARNING</code> or <code>STATUS_ERROR</code>.</dd>
+
+        <dt>topic <span class="property-type">string</span></dt>
+        <dd>The operation's plan ID (or repository ID for repository tasks).</dd>
+    </dl>
+    <p>With <b>Output</b> set to <code>Raw Backrest events</code>, <code>payload</code> is the event as Backrest sends it. <code>payload.event</code> says which kind it is:</p>
+    <ul>
+        <li><code>createdOperations</code> - <code>payload.createdOperations.operations</code> holds the new operations</li>
+        <li><code>updatedOperations</code> - <code>payload.updatedOperations.operations</code> holds the changed operations</li>
+        <li><code>deletedOperations</code> - <code>payload.deletedOperations.values</code> holds the IDs of removed operations</li>
+    </ul>
 
     <h3>Properties</h3>
     <dl class="message-properties">
-        <dt>Backrest Config
-            <span class="property-type">config</span>
-        </dt>
-        <dd>Configuration for connecting to the Backrest server.</dd>
+        <dt>Backrest Server <span class="property-type">config</span></dt>
+        <dd>The Backrest server to listen to.</dd>
 
-        <dt>Operation Mode
-            <span class="property-type">select</span>
-        </dt>
-        <dd>Controls how the node subscribes to events:
-            <ul>
-                <li><code>Always Listening</code> - Automatically subscribes on deploy and stays connected</li>
-                <li><code>Subscribe on Trigger</code> - Subscribes/unsubscribes based on incoming messages</li>
-            </ul>
-        </dd>
+        <dt>Subscribe <span class="property-type">select</span></dt>
+        <dd><code>Always</code> listens from deploy. <code>On trigger</code> starts listening when a message arrives and <b>Trigger</b> is true, and stops when it is false.</dd>
 
-        <dt class="optional">Trigger
-            <span class="property-type">msg | flow | global | bool</span>
-        </dt>
-        <dd>Property that controls subscription state in "Subscribe on Trigger" mode. Only shown when using this mode.</dd>
+        <dt>Output <span class="property-type">select</span></dt>
+        <dd>One filtered message per operation, or Backrest's raw events (the only output before version 1.0).</dd>
+
+        <dt>Send <span class="property-type">select</span></dt>
+        <dd>Which updates to send: when an operation is created or its status changes (skipping progress updates), only when it finishes, or every update including backup progress. Deleted operations are only sent when no plan, repository or type filter is set, because Backrest only sends their ID.</dd>
+
+        <dt>Plan / Repository <span class="property-type">plan | repository | string | flow | global | env</span></dt>
+        <dd>Only send operations of this plan or repository. Pick one from the list (use the refresh button to reload it), or read the ID from context or an environment variable when each event arrives.</dd>
+
+        <dt>Types <span class="property-type">checkboxes</span></dt>
+        <dd>Only send these types of operation.</dd>
     </dl>
 
     <h3>Inputs</h3>
     <dl class="message-properties">
-        <dt class="optional">
-            msg.payload <span class="property-type">boolean</span>
-        </dt>
-        <dd>In "Subscribe on Trigger" mode: Set to true to subscribe to events, false to unsubscribe. Must match the configured Trigger property type.</dd>
+        <dt class="optional">payload <span class="property-type">boolean</span></dt>
+        <dd>In <code>On trigger</code> mode, with the default Trigger: true to subscribe, false to unsubscribe.</dd>
     </dl>
-
-    <h3>Outputs</h3>
-    <dl class="message-properties">
-        <dt>
-            msg.payload <span class="property-type">object</span>
-        </dt>
-        <dd>An operation event from Backrest, using the same camelCase property names as the API node. <code>event</code> says which kind it is:
-            <ul>
-                <li><code>createdOperations</code> - <code>payload.createdOperations.operations</code> holds the new operations</li>
-                <li><code>updatedOperations</code> - <code>payload.updatedOperations.operations</code> holds the changed operations (including progress updates)</li>
-                <li><code>deletedOperations</code> - <code>payload.deletedOperations.values</code> holds the IDs of removed operations</li>
-            </ul>
-            Each operation has <code>id</code>, <code>planId</code>, <code>repoId</code>, <code>status</code> and <code>op</code>, the name of the field holding the operation's details (for example <code>operationBackup</code>).
-        </dd>
-    </dl>
-
-    <h3>Details</h3>
-    <p>The Operation Events node maintains a subscription to your Backrest server's event stream, allowing you to:</p>
-    <ul>
-        <li>Monitor operation lifecycle events in real-time</li>
-        <li>Track the progress of running operations</li>
-        <li>Build reactive workflows based on operation states</li>
-        <li>Create operation dashboards</li>
-    </ul>
 
     <h3>Status</h3>
-    <p>The node indicates its current state through its status:</p>
     <ul>
-        <li><strong>Green dot</strong>: Successfully subscribed and receiving events</li>
-        <li><strong>Yellow ring</strong>: Not currently subscribed</li>
-        <li><strong>Red dot</strong>: Error state or no configuration</li>
+        <li><strong>Green dot</strong>: subscribed and receiving events</li>
+        <li><strong>Yellow ring</strong>: not subscribed</li>
+        <li><strong>Red dot</strong>: disconnected (reconnecting) or no configuration</li>
     </ul>
 </script>

@@ -18,7 +18,51 @@ describe("Operation Events node", function () {
         ];
     }
 
-    it("streams operation events while always listening", async function () {
+    it("sends one message per operation", async function () {
+        await nr.load(flow({ output: "operation", when: "status" }), server);
+        const out = nr.collect("out");
+        await new Promise(r => setTimeout(r, 500));
+        await server.raw("Backup", { value: "test-plan", dryRun: true });
+
+        const created = await out.next(m => m.event === "created" && m.operationType === "backup");
+        assert.strictEqual(created.topic, "test-plan");
+        assert.strictEqual(created.payload.planId, "test-plan");
+        assert.strictEqual(created.payload.operationBackup.dryRun, true);
+        const id = created.payload.id;
+        await out.next(m => m.payload.id === id && m.status === "STATUS_SUCCESS");
+        const updates = out.messages.filter(m => m.payload.id === id).map(m => m.status);
+        assert.deepStrictEqual(updates, [...new Set(updates)], "each status is only sent once");
+    });
+
+    it("filters by plan, type and finished operations", async function () {
+        await server.addPlan({ id: "other-plan", repo: "test-repo", paths: ["/source/sub"] });
+        await nr.load(flow({
+            output: "operation", when: "final", planType: "backrest-plan", planValue: "other-plan", types: ["backup"]
+        }), server);
+        const out = nr.collect("out");
+        await new Promise(r => setTimeout(r, 500));
+        await server.raw("Backup", { value: "test-plan", dryRun: true });
+        await server.raw("Backup", { value: "other-plan", dryRun: true });
+        const msg = await out.next(m => m.payload.planId === "other-plan");
+        await new Promise(r => setTimeout(r, 1000));
+        assert.ok(out.messages.every(m => m.payload.planId === "other-plan"), "only other-plan");
+        assert.ok(out.messages.every(m => m.operationType === "backup"), "only backups");
+        assert.deepStrictEqual(out.messages.map(m => m.status), [msg.status], "one message, when it finished");
+        assert.strictEqual(msg.status, "STATUS_SUCCESS");
+    });
+
+    it("reads the plan filter from flow context", async function () {
+        await nr.load(flow({ output: "operation", when: "final", planType: "flow", planValue: "watchedPlan" }), server);
+        const out = nr.collect("out");
+        nr.getNode("events").context().flow.set("watchedPlan", "other-plan");
+        await new Promise(r => setTimeout(r, 500));
+        await server.raw("Backup", { value: "test-plan", dryRun: true });
+        await server.raw("Backup", { value: "other-plan", dryRun: true });
+        await out.next(m => m.payload.planId === "other-plan");
+        assert.ok(out.messages.every(m => m.payload.planId === "other-plan"));
+    });
+
+    it("streams raw operation events (nodes from before 1.0)", async function () {
         await nr.load(flow(), server);
         const out = nr.collect("out");
         await new Promise(r => setTimeout(r, 500)); // let the stream connect

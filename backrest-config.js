@@ -90,7 +90,7 @@ module.exports = function(RED) {
         this.client = null;
         this.operationStreamCall = null;  // active call for GetOperationEvents
         this.operationStreamEndOrErrorHandled = false;
-        this.subscribers = [];            // array of { node, callback } objects
+        this.subscribers = [];            // array of { node, callback, status } objects
         this.reconnectAttempts = 0;
         this.manualStop = false;
 
@@ -204,7 +204,7 @@ module.exports = function(RED) {
                     (this.maxReconnectTries !== 0 ? ` (${this.reconnectAttempts}/${this.maxReconnectTries})` : '')
             };
         }
-        this.subscribers.forEach(sub => {
+        this.subscribers.filter(sub => sub.status).forEach(sub => {
             sub.node.status(statusObj);
         });
     };
@@ -214,7 +214,7 @@ module.exports = function(RED) {
      */
     BackrestConfigNode.prototype.startOperationEventsStream = function() {
         if (this.operationStreamCall) {
-            this.log("OperationEvents stream already active; ignoring start request.");
+            this.debug("OperationEvents stream already active; ignoring start request.");
             return;
         }
         if (!this.client) {
@@ -278,7 +278,7 @@ module.exports = function(RED) {
             this.operationStreamCall = null;
         }
         // Do not reset reconnectAttempts here since they persist until a successful connection.
-        this.subscribers.forEach(sub => {
+        this.subscribers.filter(sub => sub.status).forEach(sub => {
             sub.node.status({ fill: "yellow", shape: "ring", text: "not subscribed" });
         });
     };
@@ -288,7 +288,7 @@ module.exports = function(RED) {
      */
     BackrestConfigNode.prototype.handleOperationStreamError = function(err) {
         if (err.code === ERROR_CODES.CANCELLED && err.details === "Cancelled on client") {
-            this.log("OperationEvents stream cancelled by client (manual stop).");
+            this.debug("OperationEvents stream cancelled by client (manual stop).");
             return;
         }
         switch (err.code) {
@@ -312,7 +312,7 @@ module.exports = function(RED) {
      */
     BackrestConfigNode.prototype.maybeReconnect = function() {
         if (this.manualStop) {
-            this.log("Not reconnecting: manual stop triggered.");
+            this.debug("Not reconnecting: manual stop triggered.");
             return;
         }
         if (!this.autoReconnect) {
@@ -338,16 +338,18 @@ module.exports = function(RED) {
 
     /**
      * Subscribe a node to the OperationEvents stream. Provide a callback for receiving data.
+     * With options.status false the node's status is left alone (it shows its own).
      */
-    BackrestConfigNode.prototype.subscribeOperationEvents = function(node, callback) {
+    BackrestConfigNode.prototype.subscribeOperationEvents = function(node, callback, options = {}) {
+        const status = options.status !== false;
         const existing = this.subscribers.find(s => s.node.id === node.id);
         if (!existing) {
-            this.log(`Node ${node.id} subscribed to OperationEvents.`);
-            this.subscribers.push({ node, callback });
+            this.debug(`Node ${node.id} subscribed to OperationEvents.`);
+            this.subscribers.push({ node, callback, status });
         }
         if (!this.operationStreamCall) {
             this.startOperationEventsStream();
-        } else {
+        } else if (status) {
             node.status({ fill: "green", shape: "dot", text: "subscribed" });
         }
     };
@@ -358,8 +360,10 @@ module.exports = function(RED) {
     BackrestConfigNode.prototype.unsubscribeOperationEvents = function(node) {
         const idx = this.subscribers.findIndex(s => s.node.id === node.id);
         if (idx !== -1) {
-            this.log(`Node ${node.id} unsubscribing from OperationEvents.`);
-            this.subscribers[idx].node.status({ fill: "yellow", shape: "ring", text: "not subscribed" });
+            this.debug(`Node ${node.id} unsubscribing from OperationEvents.`);
+            if (this.subscribers[idx].status) {
+                this.subscribers[idx].node.status({ fill: "yellow", shape: "ring", text: "not subscribed" });
+            }
             this.subscribers.splice(idx, 1);
         }
         if (this.subscribers.length === 0) {
