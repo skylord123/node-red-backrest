@@ -36,12 +36,12 @@ module.exports = function (RED) {
             },
             "/v1.Backrest/CheckRepoExists": {
                 description: "Check if a repository exists on the Backrest server.",
-                input: { type: "object", example: { id: "repo-id" } },
-                output: { type: "boolean", description: "True if the repository exists, false otherwise." }
+                input: { type: "object", example: { repo: { id: "repo-id", uri: "/path/to/repo", password: "repo-password" } } },
+                output: { type: "object", description: "Object with exists (omitted when false), plus error and hostKeyUntrusted when the repository can't be reached." }
             },
             "/v1.Backrest/AddRepo": {
                 description: "Add a new repository to the Backrest server.",
-                input: { type: "object", example: { id: "repo-id", path: "/path/to/repo" } },
+                input: { type: "object", example: { repo: { id: "repo-id", uri: "/path/to/repo", password: "repo-password" } } },
                 output: { type: "object", description: "Updated config object including the new repository." }
             },
             "/v1.Backrest/GetOperationEvents": {
@@ -67,21 +67,21 @@ module.exports = function (RED) {
             "/v1.Backrest/DoRepoTask": {
                 description: "Schedule a repository task (prune, stats, etc.).",
                 input: { type: "object", example: { repoId: "repo-id", task: "TASK_PRUNE" } },
-                output: { type: "none", description: "No response body, indicates successful queueing." }
+                output: { type: "object", description: "Object with operationId of the scheduled task." }
             },
             "/v1.Backrest/Forget": {
                 description: "Schedule a forget operation to clean up snapshots.",
                 input: { type: "object", example: { repoId: "repo-id", planId: "plan-id", snapshotId: "snap-id" } },
-                output: { type: "none", description: "No response body, indicates successful queueing." }
+                output: { type: "object", description: "Object with operationId of the scheduled forget operation." }
             },
             "/v1.Backrest/Restore": {
                 description: "Schedule a restore operation for a snapshot.",
                 input: { type: "object", example: { planId: "plan-id", repoId: "repo-id", snapshotId: "snapshot-id", path: "/source/path", target: "/restore/path" } },
-                output: { type: "none", description: "No response body, indicates successful queueing." }
+                output: { type: "object", description: "Object with operationId of the scheduled restore operation." }
             },
             "/v1.Backrest/Cancel": {
                 description: "Attempt to cancel an operation by its ID.",
-                input: { type: "object", example: { value: 12345 } },
+                input: { type: "object", example: { operationId: 12345 } },
                 output: { type: "none", description: "No response body, indicates cancellation request submitted." }
             },
             "/v1.Backrest/GetLogs": {
@@ -92,11 +92,11 @@ module.exports = function (RED) {
             "/v1.Backrest/RunCommand": {
                 description: "Execute a custom Restic command on a repository.",
                 input: { type: "object", example: { repoId: "repo-id", command: "restic-command" } },
-                output: { type: "object", description: "Operation ID of the submitted command." }
+                output: { type: "object", description: "Object with operationId of the command's operation." }
             },
             "/v1.Backrest/GetDownloadURL": {
-                description: "Retrieve a signed URL for downloading forget operation results.",
-                input: { type: "object", example: { value: 12345 } },
+                description: "Retrieve a signed URL for downloading restore results or a file from a snapshot.",
+                input: { type: "object", example: { opId: 12345, filePath: "/path/in/snapshot/file.txt" } },
                 output: { type: "object", description: "Signed URL for downloading results." }
             },
             "/v1.Backrest/ClearHistory": {

@@ -647,7 +647,7 @@
     "config": "06bd2857df140cc4",
     "endpoint": "/v1.Backrest/GetOperations",
     "inputType": "jsonata",
-    "inputValue": "{\t  \"selector\": {\t    \"ids\": [ payload.value ]\t  }\t}",
+    "inputValue": "{\t  \"selector\": {\t    \"ids\": [ payload.operationId ]\t  }\t}",
     "x": 960,
     "y": 720,
     "wires": [

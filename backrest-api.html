@@ -24,7 +24,7 @@
                 input: {
                     type: "object",
                     example: {
-                        "value": 12345
+                        "operationId": 12345
                     }
                 },
                 output: {
@@ -33,15 +33,16 @@
             },
             "/v1.Backrest/GetDownloadURL": {
                 label: "Get Download URL",
-                description: "Retrieve a signed URL for downloading forget operation results.",
+                description: "Retrieve a signed URL for downloading the files of a restore operation, or a single file from a snapshot (pass the snapshot's index operation ID and filePath).",
                 input: {
                     type: "object",
                     example: {
-                        "value": 12345
+                        "opId": 12345,
+                        "filePath": "/path/in/snapshot/file.txt"
                     }
                 },
                 output: {
-                    description: "String containing the signed download URL."
+                    description: "Object with value set to the signed download URL, relative to the Backrest URL."
                 }
             },
             "/v1.Backrest/Backup": {
@@ -71,7 +72,7 @@
                     }
                 },
                 output: {
-                    description: "No response body, operation successfully enqueued."
+                    description: "Object with operationId of the scheduled restore operation."
                 }
             },
             "/v1.Backrest/Forget": {
@@ -86,7 +87,7 @@
                     }
                 },
                 output: {
-                    description: "No response body, operation successfully enqueued."
+                    description: "Object with operationId of the scheduled forget operation."
                 }
             },
             "/v1.Backrest/DoRepoTask": {
@@ -100,7 +101,7 @@
                     }
                 },
                 output: {
-                    description: "No response body, task successfully enqueued."
+                    description: "Object with operationId of the scheduled task."
                 }
             },
             "/v1.Backrest/RunCommand": {
@@ -114,7 +115,7 @@
                     }
                 },
                 output: {
-                    description: "Operation ID of the executed command."
+                    description: "Object with operationId of the command's operation. Its output can be streamed with the Get Logs node."
                 }
             },
             "/v1.Backrest/ListSnapshots": {
@@ -187,11 +188,15 @@
                 input: {
                     type: "object",
                     example: {
-                        "id": "repo-id"
+                        "repo": {
+                            "id": "repo-id",
+                            "uri": "/path/to/repo",
+                            "password": "repo-password"
+                        }
                     }
                 },
                 output: {
-                    description: "Boolean indicating if the repository exists."
+                    description: "Object with exists (omitted when false), plus error and hostKeyUntrusted when the repository can't be reached."
                 }
             },
             "/v1.Backrest/AddRepo": {
@@ -200,8 +205,11 @@
                 input: {
                     type: "object",
                     example: {
-                        "id": "repo-id",
-                        "path": "/path/to/repo"
+                        "repo": {
+                            "id": "repo-id",
+                            "uri": "/path/to/repo",
+                            "password": "repo-password"
+                        }
                     }
                 },
                 output: {
