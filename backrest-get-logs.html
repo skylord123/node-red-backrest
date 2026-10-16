@@ -140,7 +140,7 @@
     <h3>Outputs</h3>
     <dl class="message-properties">
         <dt>msg.payload <span class="property-type">object | string</span></dt>
-        <dd>One message per log chunk. JSON log lines (such as restic's backup progress) are parsed into objects; other output is a string.</dd>
+        <dd>One message per log chunk, as text (or an object when the chunk is JSON).</dd>
 
         <dt>msg.logRef <span class="property-type">string</span></dt>
         <dd>The log reference being streamed.</dd>
@@ -169,5 +169,5 @@
     </dl>
 
     <h3>Details</h3>
-    <p>The node finishes handling a message (for Complete nodes) when the log stream ends. Errors, such as an unknown operation, are sent to Catch nodes.</p>
+    <p>If the operation is still queued, the node waits up to 10 minutes for it to start. The node finishes handling a message (for Complete nodes) when the log stream ends. Errors, such as an unknown operation, are sent to Catch nodes.</p>
 </script>

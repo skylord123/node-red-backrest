@@ -64,6 +64,40 @@ describe("Get Logs node", function () {
         await out.next(isCommandOutput);
     });
 
+    it("waits for a queued operation to start", async function () {
+        await nr.load(flow({ source: "operation", operationValue: "payload", operationType: "msg" }), server);
+        const out = nr.collect("out");
+        const caught = nr.collect("caught");
+        // Report the operation as queued (no log yet) the first two times it is looked up.
+        const cfg = nr.getNode("cfg");
+        const request = cfg.request.bind(cfg);
+        let lookups = 0;
+        cfg.request = async (method, body) => {
+            const res = await request(method, body);
+            if (method === "GetOperations" && ++lookups <= 2) {
+                return { operations: res.operations.map(o => ({ ...o, status: "STATUS_PENDING", logref: "", operationRunCommand: {} })) };
+            }
+            return res;
+        };
+        nr.send("logs", { payload: { operationId: commandOp.id } });
+        await out.next(isCommandOutput);
+        assert.strictEqual(lookups, 3);
+        assert.strictEqual(caught.messages.length, 0);
+    });
+
+    it("reports operations that finished without a log", async function () {
+        await nr.load(flow({ source: "operation", operationValue: "payload", operationType: "msg" }), server);
+        const caught = nr.collect("caught");
+        const cfg = nr.getNode("cfg");
+        const request = cfg.request.bind(cfg);
+        cfg.request = async (method, body) => {
+            const res = await request(method, body);
+            return { operations: res.operations.map(o => ({ ...o, logref: "", operationRunCommand: {} })) };
+        };
+        nr.send("logs", { payload: commandOp.id });
+        assert.match((await caught.next()).error.message, /has no logs/);
+    });
+
     it("completes the message when the log has been streamed", async function () {
         await nr.load(flow({ source: "operation", operationValue: "payload", operationType: "msg" }), server);
         const out = nr.collect("out");

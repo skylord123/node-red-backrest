@@ -1,8 +1,11 @@
 const { evaluate, evaluateId } = require("./lib/properties");
-const { logRefOf } = require("./lib/operations");
+const { logRefOf, isFinal } = require("./lib/operations");
 
 // gRPC status code for a call cancelled by the client
 const CANCELLED = 1;
+// How long to wait for a queued operation to start (and get a log)
+const LOG_WAIT_MS = 10 * 60 * 1000;
+const LOG_WAIT_POLL_MS = 1000;
 
 module.exports = function (RED) {
     class BackrestGetLogsNode {
@@ -28,7 +31,11 @@ module.exports = function (RED) {
             this.active = null;
 
             this.on("input", (msg, send, done) => this.handleInput(msg, send, done));
-            this.on("close", () => this.stopStream());
+            this.closed = false;
+            this.on("close", () => {
+                this.closed = true;
+                this.stopStream();
+            });
 
             this.status({});
         }
@@ -51,12 +58,20 @@ module.exports = function (RED) {
                 return { logRef: String(logRef) };
             }
             const id = await evaluateId(RED, this, this.operationValue, this.operationType, msg, "operation");
-            const res = await this.serverConfig.request("GetOperations", { selector: { ids: [id] } });
-            const op = (res.operations || [])[0];
-            if (!op) throw new Error(`Operation ${id} not found`);
-            const logRef = logRefOf(op);
-            if (!logRef) throw new Error(`Operation ${id} has no logs (yet)`);
-            return { logRef, operationId: id };
+            // A queued operation gets its log once it starts, so wait for that.
+            const deadline = Date.now() + LOG_WAIT_MS;
+            for (;;) {
+                if (this.closed) return null;
+                const res = await this.serverConfig.request("GetOperations", { selector: { ids: [id] } });
+                const op = (res.operations || [])[0];
+                if (!op) throw new Error(`Operation ${id} not found`);
+                const logRef = logRefOf(op);
+                if (logRef) return { logRef, operationId: id };
+                if (isFinal(op.status)) throw new Error(`Operation ${id} has no logs`);
+                if (Date.now() > deadline) throw new Error(`Operation ${id} hasn't started yet`);
+                this.status({ fill: "blue", shape: "ring", text: `waiting for operation ${id} to start` });
+                await new Promise(r => setTimeout(r, LOG_WAIT_POLL_MS));
+            }
         }
 
         async handleInput(msg, send, done) {
@@ -67,8 +82,12 @@ module.exports = function (RED) {
                     done();
                     return;
                 }
-                const { logRef, operationId } = await this.resolveLogRef(msg);
-                this.startLogsStream(msg, logRef, operationId, send, done);
+                const resolved = await this.resolveLogRef(msg);
+                if (!resolved) {
+                    done(); // node stopped while waiting for the operation
+                    return;
+                }
+                this.startLogsStream(msg, resolved.logRef, resolved.operationId, send, done);
             } catch (err) {
                 this.status({ fill: "red", shape: "dot", text: err.message });
                 done(err);
