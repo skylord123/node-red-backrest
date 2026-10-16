@@ -1,14 +1,10 @@
-module.exports = function (RED) {
-    // Utility to promisify RED.util.evaluateNodeProperty.
-    function evaluateProperty(prop, type, node, msg) {
-        return new Promise((resolve, reject) => {
-            RED.util.evaluateNodeProperty(prop, type, node, msg, (err, result) => {
-                if (err) reject(err);
-                else resolve(result);
-            });
-        });
-    }
+const { evaluate, evaluateId } = require("./lib/properties");
+const { logRefOf } = require("./lib/operations");
 
+// gRPC status code for a call cancelled by the client
+const CANCELLED = 1;
+
+module.exports = function (RED) {
     class BackrestGetLogsNode {
         constructor(config) {
             RED.nodes.createNode(this, config);
@@ -18,88 +14,111 @@ module.exports = function (RED) {
                 this.status({ fill: "red", shape: "dot", text: "no config" });
                 return;
             }
-            // Store configuration properties
             this.triggerValue = config.triggerValue;
             this.triggerType = config.triggerType;
+            // "operation": look up the log of an operation. "logref": use a log reference directly.
+            // Nodes from before 1.0 have no source and always used a log reference.
+            this.source = config.source || "logref";
+            this.operationValue = config.operationValue;
+            this.operationType = config.operationType;
             this.logRefValue = config.logRefValue;
             this.logRefType = config.logRefType;
 
-            // Ephemeral stream state
-            this.activeCall = null;
+            // The stream currently running: { call, done }
+            this.active = null;
 
             this.on("input", (msg, send, done) => this.handleInput(msg, send, done));
             this.on("close", () => this.stopStream());
 
-            this.status({ fill: "red", shape: "ring", text: "disconnected" });
+            this.status({});
         }
 
+        /** Stop the running stream (if any) and complete its message. */
         stopStream() {
-            if (this.activeCall) {
-                this.activeCall.cancel();
-                this.activeCall = null;
+            const active = this.active;
+            if (!active) return;
+            this.active = null;
+            active.stopped = true;
+            active.call.cancel();
+            active.done();
+            this.status({});
+        }
+
+        async resolveLogRef(msg) {
+            if (this.source === "logref") {
+                const logRef = await evaluate(RED, this, this.logRefValue, this.logRefType, msg);
+                if (!logRef) throw new Error("No log reference given");
+                return { logRef: String(logRef) };
             }
-            this.status({ fill: "red", shape: "ring", text: "disconnected" });
+            const id = await evaluateId(RED, this, this.operationValue, this.operationType, msg, "operation");
+            const res = await this.serverConfig.request("GetOperations", { selector: { ids: [id] } });
+            const op = (res.operations || [])[0];
+            if (!op) throw new Error(`Operation ${id} not found`);
+            const logRef = logRefOf(op);
+            if (!logRef) throw new Error(`Operation ${id} has no logs (yet)`);
+            return { logRef, operationId: id };
         }
 
         async handleInput(msg, send, done) {
             try {
-                // Evaluate if we should start listening
-                const shouldListen = await evaluateProperty(this.triggerValue, this.triggerType, this, msg);
-                this.debug("shouldListen = " + (shouldListen ? "Yes" : "No"));
-
+                const shouldListen = await evaluate(RED, this, this.triggerValue, this.triggerType, msg);
                 if (!shouldListen) {
                     this.stopStream();
                     done();
                     return;
                 }
-
-                // Evaluate the logRef
-                const logRef = await evaluateProperty(this.logRefValue, this.logRefType, this, msg);
-                if (!logRef) {
-                    throw new Error("No logRef provided");
-                }
-
-                // Start the ephemeral stream
-                await this.startLogsStream(logRef, send);
-                done();
+                const { logRef, operationId } = await this.resolveLogRef(msg);
+                this.startLogsStream(msg, logRef, operationId, send, done);
             } catch (err) {
-                this.error(err.message);
-                this.status({ fill: "red", shape: "dot", text: "input error" });
+                this.status({ fill: "red", shape: "dot", text: err.message });
                 done(err);
             }
         }
 
-        async startLogsStream(logRef, send) {
-            this.stopStream(); // Stop any existing stream
+        startLogsStream(msg, logRef, operationId, send, done) {
+            this.stopStream();
             const client = this.serverConfig.client;
             if (!client) {
                 throw new Error("No gRPC client available; check the Backrest server configuration.");
             }
 
-            this.activeCall = client.GetLogs({ ref: logRef }, this.serverConfig.createAuthMetadata());
-
-            // Register stream events
-            this.activeCall.on("data", (chunk) => {
-                const str = chunk.value.toString("utf8");
-                try {
-                    const jsonData = JSON.parse(str);
-                    send({ payload: jsonData });
-                } catch (err) {
-                    send({ payload: str });
+            const call = client.GetLogs({ ref: logRef }, this.serverConfig.createAuthMetadata());
+            const active = { call, done: () => {}, stopped: false };
+            let finished = false;
+            const finish = err => {
+                if (finished) return;
+                finished = true;
+                if (this.active === active) {
+                    this.active = null;
+                    this.status(err ? { fill: "red", shape: "dot", text: "error" } : {});
                 }
-            });
+                done(err);
+            };
+            active.done = () => finish();
+            this.active = active;
 
-            this.activeCall.on("error", (err) => {
-                this.error(`GetLogs stream error: ${err.message}`);
-                this.stopStream();
+            call.on("data", chunk => {
+                const text = chunk.value.toString("utf8");
+                const out = RED.util.cloneMessage(msg);
+                try {
+                    out.payload = JSON.parse(text);
+                } catch (err) {
+                    out.payload = text;
+                }
+                out.logRef = logRef;
+                if (operationId) out.operationId = operationId;
+                send(out);
             });
-
-            this.activeCall.on("end", () => {
-                this.log("GetLogs stream ended.");
-                this.stopStream();
+            call.on("error", err => {
+                if (active.stopped || err.code === CANCELLED) {
+                    finish();
+                    return;
+                }
+                finish(new Error(`GetLogs stream error: ${err.details || err.message}`));
             });
+            call.on("end", () => finish());
 
-            this.status({ fill: "green", shape: "dot", text: `listening [logRef:${logRef}]` });
+            this.status({ fill: "green", shape: "dot", text: operationId ? `streaming operation ${operationId}` : "streaming" });
         }
     }
 

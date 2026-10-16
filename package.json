@@ -38,6 +38,8 @@
   "files": [
     "*.js",
     "*.html",
+    "lib/",
+    "resources/",
     "icons/",
     "examples/",
     "proto/",

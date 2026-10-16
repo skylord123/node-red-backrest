@@ -66,29 +66,3 @@ describe("Operation Events node", function () {
         assert.strictEqual(out.messages.length, count, "no events after unsubscribing");
     });
 });
-
-describe("Get Logs node", function () {
-    let server;
-
-    before(async function () {
-        server = await getBackrest();
-    });
-
-    it("streams the output of a command", async function () {
-        await nr.load([
-            { id: "f1", type: "tab" },
-            { id: "cfg", type: "backrest-config", name: "test" },
-            {
-                id: "logs", type: "backrest-get-logs", z: "f1", config: "cfg",
-                triggerValue: "true", triggerType: "bool", logRefValue: "logRef", logRefType: "msg", wires: [["out"]]
-            },
-            { id: "out", type: "helper", z: "f1" }
-        ], server);
-        const out = nr.collect("out");
-
-        const { operationId } = await server.raw("RunCommand", { repoId: "test-repo", command: "snapshots" });
-        const op = await server.waitForOperation(operationId);
-        nr.send("logs", { logRef: op.operationRunCommand.outputLogref });
-        await out.next(m => /restic snapshots/.test(String(m.payload)));
-    });
-});

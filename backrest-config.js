@@ -1,8 +1,8 @@
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
-const https = require("https");
 const path = require("path");
-const axios = require("axios");
+const client = require("./lib/client");
+const { listResources } = require("./lib/resources");
 
 // Defaults for reconnect logic
 const DEFAULT_RECONNECT_INTERVAL = 1000;
@@ -81,9 +81,10 @@ module.exports = function(RED) {
         }
 
         // Optional TLS settings for https:// URLs (a core tls-config node)
+        this.tlsConfigId = config.tls || "";
         this.tlsConfig = config.tls ? RED.nodes.getNode(config.tls) : null;
         this.tlsOptions = this.buildTlsOptions();
-        this.httpsAgent = this.tlsOptions ? new https.Agent(this.tlsOptions) : undefined;
+        this.httpsAgent = client.httpsAgentFor(this.tlsOptions);
 
         // gRPC client + streaming state
         this.client = null;
@@ -161,37 +162,24 @@ module.exports = function(RED) {
     };
 
     /**
+     * Connection settings for HTTP requests to this Backrest server.
+     */
+    BackrestConfigNode.prototype.server = function() {
+        return { url: this.backrest_url, username: this.username, password: this.password, httpsAgent: this.httpsAgent };
+    };
+
+    /**
      * Options for HTTP requests to this Backrest server (auth and TLS).
      */
     BackrestConfigNode.prototype.requestOptions = function() {
-        return {
-            headers: { "Content-Type": "application/json" },
-            auth: (this.username && this.password) ? { username: this.username, password: this.password } : undefined,
-            httpsAgent: this.httpsAgent
-        };
+        return client.requestOptions(this.server());
     };
 
     /**
      * Call a Backrest API method (such as "GetConfig") and resolve with the response body.
-     * Errors include Backrest's own error message when there is one.
      */
-    BackrestConfigNode.prototype.request = async function(method, body = {}) {
-        if (!this.backrest_url) {
-            throw new Error("No Backrest URL configured");
-        }
-        try {
-            const res = await axios.post(`${this.backrest_url}/v1.Backrest/${method}`, body, this.requestOptions());
-            return res.data;
-        } catch (err) {
-            const data = err.response && err.response.data;
-            const detail = data && typeof data === "object" && data.message ? data.message
-                : typeof data === "string" && data ? data.trim() : err.message;
-            const status = err.response ? ` (${err.response.status})` : "";
-            const wrapped = new Error(`Backrest ${method} failed${status}: ${detail}`);
-            wrapped.status = err.response && err.response.status;
-            wrapped.code = data && data.code;
-            throw wrapped;
-        }
+    BackrestConfigNode.prototype.request = function(method, body = {}) {
+        return client.request(this.server(), method, body);
     };
 
     /**
@@ -384,6 +372,49 @@ module.exports = function(RED) {
             backrest_url: { type: "text" },
             username: { type: "text" },
             password: { type: "password" }
+        }
+    });
+
+    /**
+     * Editor endpoint: list the plans, repositories and recent operations of a Backrest
+     * server, for the pickers in the node edit dialogs.
+     *
+     * Body: { config, include, url?, username?, password?, tls? }. `config` is the
+     * backrest-config node ID. When the editor has unsaved changes to that config node
+     * it also sends `url` and the other settings; a missing password falls back to the
+     * deployed one.
+     */
+    RED.httpAdmin.post("/backrest/resources", RED.auth.needsPermission("backrest-config.read"), async function(req, res) {
+        const body = req.body || {};
+        const deployed = body.config ? RED.nodes.getNode(body.config) : null;
+        let server;
+        if (body.url) {
+            const password = body.password && body.password !== "__PWRD__" ? body.password : (deployed ? deployed.password : "");
+            const tlsNode = body.tls ? RED.nodes.getNode(body.tls) : null;
+            let tlsOptions = null;
+            if (tlsNode) {
+                tlsOptions = {};
+                tlsNode.addTLSOptions(tlsOptions);
+            } else if (deployed && body.tls === deployed.tlsConfigId) {
+                tlsOptions = deployed.tlsOptions;
+            }
+            server = {
+                url: String(body.url).trim().replace(/\/?$/, ""),
+                username: body.username || "",
+                password,
+                httpsAgent: client.httpsAgentFor(tlsOptions)
+            };
+        } else if (deployed) {
+            server = deployed.server();
+        } else {
+            res.status(400).json({ error: "Enter the Backrest URL in the server config, or deploy it first" });
+            return;
+        }
+        const include = Array.isArray(body.include) ? body.include : ["plans", "repos"];
+        try {
+            res.json(await listResources(server, include));
+        } catch (err) {
+            res.status(502).json({ error: err.message });
         }
     });
 };

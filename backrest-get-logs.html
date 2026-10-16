@@ -1,3 +1,4 @@
+<script src="resources/@skylord123/node-red-contrib-backrest/backrest-editor.js"></script>
 <script type="text/javascript">
     RED.nodes.registerType('backrest-get-logs', {
         category: 'backrest',
@@ -7,6 +8,9 @@
             config: { type: "backrest-config", required: true },
             triggerValue: { value: "true", required: false },
             triggerType: { value: "bool", required: false },
+            source: { value: "operation" },
+            operationValue: { value: "payload" },
+            operationType: { value: "msg" },
             logRefValue: { value: "logRef", required: false },
             logRefType: { value: "msg", required: false }
         },
@@ -18,21 +22,42 @@
             return this.name || "Get Logs";
         },
         oneditprepare: function() {
-            // Listen typed input
+            // Nodes from before 1.0 have no source and always used a log reference.
+            if (this.source === undefined) {
+                $("#node-input-source").val("logref");
+            }
+
             $("#node-input-triggerValue").typedInput({
-                types: ["msg","flow","global","str","jsonata","bool","num"],
+                types: ["msg", "flow", "global", "str", "jsonata", "bool", "num"],
                 typeField: "#node-input-triggerType"
             });
 
-            // Log ref typed input
+            BackrestEditor.picker({
+                input: "#node-input-operationValue",
+                typeField: "#node-input-operationType",
+                kind: "operation",
+                types: ["msg", "flow", "global", "num", "str", "jsonata", "env"],
+                config: "#node-input-config",
+                value: this.operationValue,
+                type: this.operationType
+            });
+
             $("#node-input-logRefValue").typedInput({
-                types: ["msg","flow","global","str","jsonata","bool","num"],
+                types: ["msg", "flow", "global", "str", "jsonata", "env"],
                 typeField: "#node-input-logRefType"
             });
+
+            $("#node-input-source").on("change", function () {
+                const byOperation = $(this).val() !== "logref";
+                $("#get-logs-operation-row").toggle(byOperation);
+                $("#get-logs-logref-row").toggle(!byOperation);
+            }).trigger("change");
         },
         oneditsave: function() {
             this.triggerValue = $("#node-input-triggerValue").typedInput("value");
             this.triggerType = $("#node-input-triggerValue").typedInput("type");
+            this.operationValue = $("#node-input-operationValue").typedInput("value");
+            this.operationType = $("#node-input-operationValue").typedInput("type");
             this.logRefValue = $("#node-input-logRefValue").typedInput("value");
             this.logRefType = $("#node-input-logRefValue").typedInput("type");
         }
@@ -55,6 +80,38 @@
     </div>
 
     <div class="form-row">
+        <label for="node-input-source">
+            <i class="fa fa-crosshairs"></i> Logs of
+        </label>
+        <select id="node-input-source" style="width:70%;">
+            <option value="operation">An operation</option>
+            <option value="logref">A log reference</option>
+        </select>
+    </div>
+
+    <div class="form-row" id="get-logs-operation-row">
+        <label for="node-input-operationValue">
+            <i class="fa fa-tasks"></i> Operation
+        </label>
+        <input type="text" id="node-input-operationValue" style="width:60%;" />
+        <input type="hidden" id="node-input-operationType" />
+        <div style="margin-left:5px;">
+            <small>Pick an operation, or take its ID (or the whole operation) from the message.</small>
+        </div>
+    </div>
+
+    <div class="form-row" id="get-logs-logref-row">
+        <label for="node-input-logRefValue">
+            <i class="fa fa-file-text-o"></i> Log Reference
+        </label>
+        <input type="text" id="node-input-logRefValue" style="width:60%;" />
+        <input type="hidden" id="node-input-logRefType" />
+        <div style="margin-left:5px;">
+            <small>The log reference to stream, such as an operation's <code>logref</code>.</small>
+        </div>
+    </div>
+
+    <div class="form-row">
         <label for="node-input-triggerValue">
             <i class="fa fa-play"></i> Trigger
         </label>
@@ -62,87 +119,55 @@
         <input type="hidden" id="node-input-triggerType" />
         <div style="margin-left:5px;">
             <small>
-                Evaluates to <strong>true</strong> to start the GetLogs stream and <strong>false</strong> to stop it.
-                If fetching logs for completed tasks or if stopping the stream isn't necessary, leave this set to <strong>true</strong>.
+                Evaluates to <strong>true</strong> to start streaming and <strong>false</strong> to stop.
+                Leave it set to <strong>true</strong> unless you need to stop a stream early.
             </small>
-        </div>
-    </div>
-
-    <div class="form-row">
-        <label for="node-input-logRefValue">
-            <i class="fa fa-file-text-o"></i> Log Reference
-        </label>
-        <input type="text" id="node-input-logRefValue" style="width:60%;" />
-        <input type="hidden" id="node-input-logRefType" />
-        <div style="margin-left:5px;">
-            <small>The "ref" for which logs should be streamed.</small>
         </div>
     </div>
 </script>
 
 <script type="text/html" data-help-name="backrest-get-logs">
-    <p>Streams logs from a Backrest operation. This node allows you to monitor the progress and output of backup, restore, and other operations in real-time.</p>
+    <p>Streams the log of a Backrest operation, such as the output of a backup or a restic command. A running operation's log is streamed live until the operation finishes.</p>
 
     <h3>Inputs</h3>
     <dl class="message-properties">
-        <dt>
-            msg.logRef <span class="property-type">string</span>
-        </dt>
-        <dd>The reference ID of the operation to stream logs from.</dd>
-
         <dt class="optional">
-            msg.listen <span class="property-type">boolean</span>
+            msg.payload <span class="property-type">number | string | object</span>
         </dt>
-        <dd>Set to true to start streaming logs, false to stop.</dd>
-    </dl>
-
-    <h3>Properties</h3>
-    <dl class="message-properties">
-        <dt>Backrest Config
-            <span class="property-type">config</span>
-        </dt>
-        <dd>Configuration for connecting to the Backrest server.</dd>
-
-        <dt>Start Listening?
-            <span class="property-type">msg | flow | global | bool</span>
-        </dt>
-        <dd>Property that determines when to start/stop streaming logs.</dd>
-
-        <dt>Log Reference
-            <span class="property-type">msg | flow | global | string</span>
-        </dt>
-        <dd>Property containing the operation reference ID to stream logs from.</dd>
+        <dd>With the default settings: the operation whose logs to stream. This can be an operation ID, an operation (such as one from the Operation Events node), or the result of a Run Backup node.</dd>
     </dl>
 
     <h3>Outputs</h3>
     <dl class="message-properties">
-        <dt>
-            msg.payload <span class="property-type">object | string</span>
-        </dt>
-        <dd>Log data from the operation. If the data is valid JSON, it will be parsed into an object. Otherwise, it will be output as a string.</dd>
+        <dt>msg.payload <span class="property-type">object | string</span></dt>
+        <dd>One message per log chunk. JSON log lines (such as restic's backup progress) are parsed into objects; other output is a string.</dd>
+
+        <dt>msg.logRef <span class="property-type">string</span></dt>
+        <dd>The log reference being streamed.</dd>
+
+        <dt class="optional">msg.operationId <span class="property-type">string</span></dt>
+        <dd>The operation ID, when the logs were looked up by operation.</dd>
+    </dl>
+    <p>Other properties of the input message are kept on every output message.</p>
+
+    <h3>Properties</h3>
+    <dl class="message-properties">
+        <dt>Backrest Server <span class="property-type">config</span></dt>
+        <dd>The Backrest server to connect to.</dd>
+
+        <dt>Logs of <span class="property-type">select</span></dt>
+        <dd><code>An operation</code> looks up the operation and streams its log. <code>A log reference</code> streams a log reference you already have.</dd>
+
+        <dt>Operation <span class="property-type">operation | msg | flow | global | ...</span></dt>
+        <dd>Pick a recent operation from the list (use the refresh button to reload it), or read the operation ID from the message or context.</dd>
+
+        <dt>Log Reference <span class="property-type">msg | flow | global | ...</span></dt>
+        <dd>Where to read the log reference from, when streaming a log reference directly.</dd>
+
+        <dt>Trigger <span class="property-type">bool | msg | flow | global | ...</span></dt>
+        <dd>When it evaluates to true the stream starts (replacing any stream already running); when false the running stream stops.</dd>
     </dl>
 
     <h3>Details</h3>
-    <p>The Get Logs node provides real-time access to operation logs from your Backrest server. Common uses include:</p>
-    <ul>
-        <li>Monitoring backup progress</li>
-        <li>Debugging failed operations</li>
-        <li>Capturing operation output for auditing</li>
-        <li>Real-time status updates</li>
-    </ul>
-
-    <h3>Usage</h3>
-    <p>To use this node:</p>
-    <ol>
-        <li>Configure the node with your Backrest server details</li>
-        <li>Set the Log Reference to the operation ID you want to monitor</li>
-        <li>Set Start Listening to true to begin receiving logs</li>
-        <li>The node will emit messages containing log data until either:
-            <ul>
-                <li>The operation completes</li>
-                <li>Start Listening is set to false</li>
-                <li>An error occurs</li>
-            </ul>
-        </li>
-    </ol>
+    <p>The node finishes handling a message (for Complete nodes) when the log stream ends. Errors, such as an unknown operation, are sent to Catch nodes.</p>
 </script>
