@@ -113,6 +113,20 @@ describe("Backrest Hooks example", function () {
         assert.strictEqual(resume.messages.length, 0, "the end hook doesn't run for a cancelled backup");
     });
 
+    it("cancels the backup when Node-RED can't be reached", async function () {
+        await loadExample("hooked-offline");
+        // Node-RED goes away: nothing listens on the hook URL any more.
+        await http.close();
+        http = null;
+        await assert.rejects(server.raw("Backup", { value: "hooked-offline" }), err => {
+            assert.match(err.response.data.message, /task cancelled: exit status 7/); // curl: couldn't connect
+            return true;
+        });
+        const op = await lastBackup("hooked-offline");
+        assert.strictEqual(op.status, "STATUS_USER_CANCELLED");
+        assert.ok(!op.snapshotId, "no snapshot");
+    });
+
     it("still runs the end flow when the backup fails", async function () {
         const { resume } = await loadExample("hooked-broken");
         await server.addPlan({
