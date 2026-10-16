@@ -51,7 +51,8 @@
             [
                 "15af7a1c446af0da"
             ]
-        ]
+        ],
+        "inputs": 0
     },
     {
         "type": "function",
@@ -133,7 +134,8 @@
             [
                 "67684eaff430372f"
             ]
-        ]
+        ],
+        "inputs": 0
     },
     {
         "type": "debug",
@@ -197,7 +199,8 @@
             [
                 "a3525ea55c114053"
             ]
-        ]
+        ],
+        "inputs": 0
     },
     {
         "type": "function",
@@ -333,7 +336,8 @@
             [
                 "81748a48ac832a08"
             ]
-        ]
+        ],
+        "inputs": 1
     },
     {
         "type": "debug",
