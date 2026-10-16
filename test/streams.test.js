@@ -33,6 +33,18 @@ describe("Operation Events node", function () {
             m.payload.updatedOperations.operations.some(o => o.id === op.id && o.status === "STATUS_SUCCESS"));
     });
 
+    it("does not send keep-alive messages", async function () {
+        await nr.load(flow(), server);
+        const out = nr.collect("out");
+        await new Promise(r => setTimeout(r, 500));
+        // Backrest only sends these once a minute, so emit one on the live stream.
+        const call = nr.getNode("cfg").operationStreamCall;
+        call.emit("data", { keepAlive: {}, event: "keepAlive" });
+        call.emit("data", { createdOperations: { operations: [] }, event: "createdOperations" });
+        await out.next(m => m.payload.event === "createdOperations");
+        assert.ok(!out.messages.some(m => m.payload.event === "keepAlive"));
+    });
+
     it("subscribes and unsubscribes on trigger messages", async function () {
         await nr.load(flow({ mode: "manual", triggerValue: "payload", triggerType: "msg" }), server);
         const out = nr.collect("out");

@@ -252,6 +252,8 @@ module.exports = function(RED) {
                 this.reconnectAttempts = 0;
                 this.updateSubscribersStatus();
             }
+            // Backrest sends a keep-alive every minute; it carries no information.
+            if (data.event === "keepAlive") return;
             // Broadcast to all subscribers.
             for (const sub of this.subscribers) {
                 sub.callback(data);
