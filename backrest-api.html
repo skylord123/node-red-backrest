@@ -216,6 +216,52 @@
                     description: "Updated configuration including the new repository."
                 }
             },
+            "/v1.Backrest/RemoveRepo": {
+                label: "Remove Repository",
+                description: "Remove a repository from Backrest and delete its operation history. The repository's data on disk is not deleted.",
+                input: {
+                    type: "object",
+                    example: {
+                        "repoId": "repo-id"
+                    }
+                },
+                output: {
+                    description: "Updated configuration without the removed repository."
+                }
+            },
+            "/v1.Backrest/SetupSftp": {
+                label: "Set Up SFTP",
+                description: "Generate an SSH key for an SFTP repository and add the host to known_hosts. Add the returned public key to the SFTP server's authorized_keys yourself. Not supported when Backrest runs on Windows.",
+                input: {
+                    type: "object",
+                    example: {
+                        "host": "sftp.example.com",
+                        "port": "22",
+                        "username": "backup"
+                    }
+                },
+                output: {
+                    description: "Object with publicKey, keyPath and knownHostsPath, plus error if a step failed."
+                }
+            },
+            "/v1.Backrest/GeneratePairingToken": {
+                label: "Generate Pairing Token",
+                description: "Create a token that another Backrest instance can use to pair with this one for multihost sync.",
+                input: {
+                    type: "object",
+                    example: {
+                        "label": "my-laptop",
+                        "ttlSeconds": 3600,
+                        "maxUses": 1,
+                        "permissions": [
+                            { "type": "PERMISSION_READ_OPERATIONS", "scopes": ["*"] }
+                        ]
+                    }
+                },
+                output: {
+                    description: "Object with the pairing token string."
+                }
+            },
             "/v1.Backrest/ClearHistory": {
                 label: "Clear Operation History",
                 description: "Clear operation history.",

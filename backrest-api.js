@@ -44,6 +44,16 @@ module.exports = function (RED) {
                 input: { type: "object", example: { repo: { id: "repo-id", uri: "/path/to/repo", password: "repo-password" } } },
                 output: { type: "object", description: "Updated config object including the new repository." }
             },
+            "/v1.Backrest/RemoveRepo": {
+                description: "Remove a repository from the config and delete its history. Does not delete the repository on disk.",
+                input: { type: "object", example: { repoId: "repo-id" } },
+                output: { type: "object", description: "Updated config object without the removed repository." }
+            },
+            "/v1.Backrest/SetupSftp": {
+                description: "Generate an SSH key for an SFTP repository and add the host to known_hosts.",
+                input: { type: "object", example: { host: "sftp.example.com", port: "22", username: "backup" } },
+                output: { type: "object", description: "Public key, key path and known_hosts path, plus error if a step failed." }
+            },
             "/v1.Backrest/GetOperationEvents": {
                 description: "Stream real-time operation events (created, updated, or deleted).",
                 input: { type: "none", example: null },
@@ -113,6 +123,11 @@ module.exports = function (RED) {
                 description: "Retrieve summary data for the dashboard view.",
                 input: { type: "none", example: null },
                 output: { type: "object", description: "Summary metrics and stats for the dashboard." }
+            },
+            "/v1.Backrest/GeneratePairingToken": {
+                description: "Create a pairing token for multihost sync.",
+                input: { type: "object", example: { label: "my-laptop", ttlSeconds: 3600, maxUses: 1 } },
+                output: { type: "object", description: "The pairing token string." }
             }
         };
 
