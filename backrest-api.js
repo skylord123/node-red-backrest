@@ -12,8 +12,8 @@ module.exports = function (RED) {
         }
 
         const baseURL = serverConfig.backrest_url || '';
-        const username = serverConfig.credentials.username || '';
-        const password = serverConfig.credentials.password || '';
+        const username = serverConfig.username;
+        const password = serverConfig.password;
         const outputType = config.outputType || "msg";
         const outputValue = config.outputValue || "payload";
 
@@ -197,10 +197,5 @@ module.exports = function (RED) {
         });
     }
 
-    RED.nodes.registerType('backrest-api', BackrestQueryNode, {
-        credentials: {
-            username: { type: 'text' },
-            password: { type: 'password' }
-        }
-    });
+    RED.nodes.registerType('backrest-api', BackrestQueryNode);
 };
