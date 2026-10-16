@@ -13,7 +13,7 @@ If you like this module please consider donating!
 
 - Start backups and get the result, with live progress and the new snapshot ID.
 - Alert when a backup fails or is overdue, using the same status as the Backrest dashboard.
-- React to operations (backups, forgets, prunes, restores...) as they start and finish.
+- React to operations (backups, forgets, prunes, restores...) as they start and finish, including ones that changed while the connection to Backrest was down.
 - Stream the log of any operation, such as the output of a restic command.
 - Call any Backrest API endpoint: manage repositories and plans, list snapshots and files, restore, run restic commands and more.
 - Pick plans, repositories and operations from your Backrest server in the editor, or take them from the message.

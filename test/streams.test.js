@@ -84,7 +84,7 @@ describe("Operation Events node", function () {
         // Backrest only sends these once a minute, so emit one on the live stream.
         const call = nr.getNode("cfg").operationStreamCall;
         call.emit("data", { keepAlive: {}, event: "keepAlive" });
-        call.emit("data", { createdOperations: { operations: [] }, event: "createdOperations" });
+        call.emit("data", { createdOperations: { operations: [{ id: "999999", modno: "1", status: "STATUS_PENDING" }] }, event: "createdOperations" });
         await out.next(m => m.payload.event === "createdOperations");
         assert.ok(!out.messages.some(m => m.payload.event === "keepAlive"));
     });

@@ -83,13 +83,15 @@ module.exports = function (RED) {
                     }
                 }
                 if (!pass) continue;
-                this.send({
+                const msg = {
                     topic: operation.planId || operation.repoId || "",
                     payload: operation,
                     event,
                     operationType: event === "deleted" ? undefined : operationType(operation),
                     status: operation.status
-                });
+                };
+                if (data.catchUp) msg.catchUp = true;
+                this.send(msg);
             }
         }
 

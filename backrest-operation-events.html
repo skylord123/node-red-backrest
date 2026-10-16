@@ -190,6 +190,9 @@
 
         <dt>topic <span class="property-type">string</span></dt>
         <dd>The operation's plan ID (or repository ID for repository tasks).</dd>
+
+        <dt class="optional">catchUp <span class="property-type">boolean</span></dt>
+        <dd><code>true</code> when the message is about an operation that changed while the connection to Backrest was lost (see <b>Missed events</b> below).</dd>
     </dl>
     <p>With <b>Output</b> set to <code>Raw Backrest events</code>, <code>payload</code> is the event as Backrest sends it. <code>payload.event</code> says which kind it is:</p>
     <ul>
@@ -224,6 +227,9 @@
         <dt class="optional">payload <span class="property-type">boolean</span></dt>
         <dd>In <code>On trigger</code> mode, with the default Trigger: true to subscribe, false to unsubscribe.</dd>
     </dl>
+
+    <h3>Missed events</h3>
+    <p>If the connection to Backrest drops and reconnects, the node sends the operations that changed in the meantime, with <code>msg.catchUp</code> (or <code>payload.catchUp</code> for raw events) set to <code>true</code>. Only the latest state of each operation is sent, operations deleted while disconnected aren't reported, and nothing is caught up after Node-RED restarts or when unsubscribing on purpose. This can be turned off in the server config.</p>
 
     <h3>Status</h3>
     <ul>
