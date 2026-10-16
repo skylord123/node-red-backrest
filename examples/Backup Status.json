@@ -1,0 +1,281 @@
+[
+    {
+        "id": "06bd2857df140cc4",
+        "type": "backrest-config",
+        "name": "Example",
+        "autoReconnect": true,
+        "reconnectInterval": "1000",
+        "reconnectTries": "0",
+        "tls": ""
+    },
+    {
+        "id": "0fd3bb21635fb11c",
+        "type": "group",
+        "z": "e53774eab1ebd2a5",
+        "name": "Check every hour and alert on problems",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "c5c5a2a565d9fc9d",
+            "100aaa56cc6fae20",
+            "4330867aeb579d94",
+            "d619ea5761b08308"
+        ],
+        "x": 91,
+        "y": 39,
+        "w": 922,
+        "h": 82,
+        "info": "Only plans that need attention are sent, so nothing reaches the notifier while all backups are healthy."
+    },
+    {
+        "type": "inject",
+        "name": "Every hour",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "3600",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "id": "c5c5a2a565d9fc9d",
+        "z": "e53774eab1ebd2a5",
+        "g": "0fd3bb21635fb11c",
+        "x": 180,
+        "y": 80,
+        "wires": [
+            [
+                "100aaa56cc6fae20"
+            ]
+        ]
+    },
+    {
+        "type": "backrest-backup-status",
+        "name": "",
+        "config": "06bd2857df140cc4",
+        "show": "plans",
+        "targetValue": "",
+        "targetType": "backrest-any",
+        "output": "each",
+        "onlyProblems": true,
+        "id": "100aaa56cc6fae20",
+        "z": "e53774eab1ebd2a5",
+        "g": "0fd3bb21635fb11c",
+        "x": 410,
+        "y": 80,
+        "wires": [
+            [
+                "4330867aeb579d94"
+            ]
+        ]
+    },
+    {
+        "type": "function",
+        "name": "Alert text",
+        "func": "const s = msg.payload;\nconst problem = s.overdue ? \"is overdue\" : s.state === \"error\" ? \"failed\" : \"finished with warnings\";\nconst last = s.lastBackup ? new Date(s.lastBackup.time).toLocaleString() : \"never\";\nmsg.payload = `Backups of ${s.id} ${problem} (last backup: ${last})`;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "4330867aeb579d94",
+        "z": "e53774eab1ebd2a5",
+        "g": "0fd3bb21635fb11c",
+        "x": 630,
+        "y": 80,
+        "wires": [
+            [
+                "d619ea5761b08308"
+            ]
+        ]
+    },
+    {
+        "type": "debug",
+        "name": "Send to your notifier",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "id": "d619ea5761b08308",
+        "z": "e53774eab1ebd2a5",
+        "g": "0fd3bb21635fb11c",
+        "x": 880,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "a5fc17166fc06138",
+        "type": "group",
+        "z": "e53774eab1ebd2a5",
+        "name": "Status of one plan",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "7749d0dc10919902",
+            "e661bd8762bdfa6c",
+            "1314b438bf9168fc"
+        ],
+        "x": 96,
+        "y": 150,
+        "w": 597,
+        "h": 82,
+        "info": "Pick the plan in the Backup Status node."
+    },
+    {
+        "type": "inject",
+        "name": "Check",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "id": "7749d0dc10919902",
+        "z": "e53774eab1ebd2a5",
+        "g": "a5fc17166fc06138",
+        "x": 170,
+        "y": 191,
+        "wires": [
+            [
+                "e661bd8762bdfa6c"
+            ]
+        ]
+    },
+    {
+        "type": "backrest-backup-status",
+        "name": "",
+        "config": "06bd2857df140cc4",
+        "show": "plans",
+        "targetValue": "",
+        "targetType": "backrest-plan",
+        "output": "each",
+        "onlyProblems": false,
+        "id": "e661bd8762bdfa6c",
+        "z": "e53774eab1ebd2a5",
+        "g": "a5fc17166fc06138",
+        "x": 380,
+        "y": 191,
+        "wires": [
+            [
+                "1314b438bf9168fc"
+            ]
+        ]
+    },
+    {
+        "type": "debug",
+        "name": "Plan status",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "id": "1314b438bf9168fc",
+        "z": "e53774eab1ebd2a5",
+        "g": "a5fc17166fc06138",
+        "x": 600,
+        "y": 191,
+        "wires": []
+    },
+    {
+        "id": "3391cf7c3f5720fb",
+        "type": "group",
+        "z": "e53774eab1ebd2a5",
+        "name": "All repositories as one list",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "d69a69420bcd4e0b",
+            "871c517a5a419eb1",
+            "72de9584269a1365"
+        ],
+        "x": 96,
+        "y": 261,
+        "w": 669,
+        "h": 82
+    },
+    {
+        "type": "inject",
+        "name": "Check",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "id": "d69a69420bcd4e0b",
+        "z": "e53774eab1ebd2a5",
+        "g": "3391cf7c3f5720fb",
+        "x": 170,
+        "y": 302,
+        "wires": [
+            [
+                "871c517a5a419eb1"
+            ]
+        ]
+    },
+    {
+        "type": "backrest-backup-status",
+        "name": "",
+        "config": "06bd2857df140cc4",
+        "show": "repos",
+        "targetValue": "",
+        "targetType": "backrest-any",
+        "output": "all",
+        "onlyProblems": false,
+        "id": "871c517a5a419eb1",
+        "z": "e53774eab1ebd2a5",
+        "g": "3391cf7c3f5720fb",
+        "x": 380,
+        "y": 302,
+        "wires": [
+            [
+                "72de9584269a1365"
+            ]
+        ]
+    },
+    {
+        "type": "debug",
+        "name": "Repository statuses",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "id": "72de9584269a1365",
+        "z": "e53774eab1ebd2a5",
+        "g": "3391cf7c3f5720fb",
+        "x": 640,
+        "y": 302,
+        "wires": []
+    }
+]

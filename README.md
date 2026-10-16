@@ -11,29 +11,43 @@ If you like this module please consider donating!
 
 ## Features
 
-- Manage Backrest repositories, snapshots, and backup operations within Node-RED.
-- Execute restic commands through Backrest’s API.
-- Monitor backup events and logs in real-time.
-- Automate backup workflows with easy-to-use nodes.
+- Start backups and get the result, with live progress and the new snapshot ID.
+- Alert when a backup fails or is overdue, using the same status as the Backrest dashboard.
+- React to operations (backups, forgets, prunes, restores...) as they start and finish.
+- Stream the log of any operation, such as the output of a restic command.
+- Call any Backrest API endpoint: manage repositories and plans, list snapshots and files, restore, run restic commands and more.
+- Pick plans, repositories and operations from your Backrest server in the editor, or take them from the message.
+- Works with Backrest behind an HTTPS reverse proxy, including self-signed certificates.
+
+## Requirements
+
+- Backrest 1.14.0 or newer
+- Node-RED 4.0 or newer
 
 ## Installation
 
-You can install via the palette manager in the Node-RED hamburger menu or you can install via terminal with this command:
+Install from the palette manager in the Node-RED menu, or from your Node-RED directory with:
 
 ```sh
-npm install node-red-contrib-backrest
+npm install @skylord123/node-red-contrib-backrest
 ```
 
-## Usage
+## Nodes
 
-This module provides Node-RED nodes for interacting with Backrest's API, including operations like:
-- Retrieving and updating configuration
-- Listing snapshots and repository files
-- Performing backups, restores, and cleanup tasks
-- Running custom restic commands
-- Streaming logs and operation events
+| Node | What it does |
+| --- | --- |
+| **Run Backup** | Starts a backup of a plan (or a dry run), shows its progress and sends the result when it finishes: successful backups on the first output, failed ones on the second. |
+| **Backup Status** | Reports the state of each plan or repository (ok, warning, error, running, overdue) with the latest backup, next scheduled backup and 30-day counts. Can send only the ones that need attention. |
+| **Operation Events** | Sends a message when operations start, change status or finish, filtered by plan, repository and type. Can also send Backrest's raw events. |
+| **Get Logs** | Streams the log of an operation, such as a backup or a restic command. |
+| **API** | Calls any Backrest API endpoint and returns the response. |
+| **Backrest Server** (config) | The Backrest URL, login and optional TLS settings shared by all nodes. |
 
-For a detailed example of how to use these nodes, check out the [examples directory](./examples).
+Each node's help (in the Node-RED sidebar) describes its inputs, outputs and options.
+
+## Examples
+
+Import the examples from the Node-RED menu under **Import > Examples > @skylord123/node-red-contrib-backrest**, or see the [examples directory](./examples). After importing, open the **Example** server config node and enter your Backrest URL and login.
 
 ## Contributing
 
