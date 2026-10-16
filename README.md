@@ -38,3 +38,14 @@ For a detailed example of how to use these nodes, check out the [examples direct
 ## Contributing
 
 Contributions are welcome! If you'd like to add features, improve documentation, or fix bugs, feel free to open a PR or issue.
+
+### Running the tests
+
+The tests run the nodes inside Node-RED against a real Backrest server, so they need Docker:
+
+```sh
+npm install
+npm test
+```
+
+They start a temporary Backrest container (`garethgeorge/backrest:v1.14.1` by default, override with `BACKREST_IMAGE`) and remove it when they finish.

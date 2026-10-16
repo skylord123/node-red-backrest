@@ -4,7 +4,7 @@
   "description": "Node-RED nodes for interacting with Backrest, a restic-powered backup management tool.",
   "main": "backrest-config.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "author": "skylord123",
   "license": "MIT",
@@ -29,5 +29,19 @@
     "@grpc/grpc-js": "^1.12.5",
     "@grpc/proto-loader": "^0.7.13",
     "axios": "^1.7.9"
-  }
+  },
+  "devDependencies": {
+    "mocha": "12.0.2",
+    "node-red": "5.0.7",
+    "node-red-node-test-helper": "0.3.6"
+  },
+  "files": [
+    "*.js",
+    "*.html",
+    "icons/",
+    "examples/",
+    "proto/",
+    "LICENSE",
+    "README.md"
+  ]
 }
