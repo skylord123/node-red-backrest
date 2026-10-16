@@ -12,8 +12,6 @@ module.exports = function (RED) {
         }
 
         const baseURL = serverConfig.backrest_url || '';
-        const username = serverConfig.username;
-        const password = serverConfig.password;
         const outputType = config.outputType || "msg";
         const outputValue = config.outputValue || "payload";
 
@@ -156,13 +154,9 @@ module.exports = function (RED) {
                     payload = {};
                 }
 
-                const headers = { 'Content-Type': 'application/json' };
                 const url = `${baseURL}${endpoint}`;
 
-                axios.post(url, payload, {
-                    headers,
-                    auth: (username && password) ? { username, password } : undefined
-                })
+                axios.post(url, payload, serverConfig.requestOptions())
                     .then(response => {
                         // Decide where to store output based on outputType + outputValue
                         switch (outputType) {

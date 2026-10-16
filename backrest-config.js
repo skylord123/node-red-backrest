@@ -1,6 +1,8 @@
 const grpc = require("@grpc/grpc-js");
 const protoLoader = require("@grpc/proto-loader");
+const https = require("https");
 const path = require("path");
+const axios = require("axios");
 
 // Defaults for reconnect logic
 const DEFAULT_RECONNECT_INTERVAL = 1000;
@@ -78,6 +80,11 @@ module.exports = function(RED) {
             this.password = "";
         }
 
+        // Optional TLS settings for https:// URLs (a core tls-config node)
+        this.tlsConfig = config.tls ? RED.nodes.getNode(config.tls) : null;
+        this.tlsOptions = this.buildTlsOptions();
+        this.httpsAgent = this.tlsOptions ? new https.Agent(this.tlsOptions) : undefined;
+
         // gRPC client + streaming state
         this.client = null;
         this.operationStreamCall = null;  // active call for GetOperationEvents
@@ -114,10 +121,77 @@ module.exports = function(RED) {
         }
         this.log(`Creating gRPC client for Backrest at: ${grpcTarget.target}${grpcTarget.secure ? " (TLS)" : ""}`);
 
+        const channelOptions = {};
+        if (grpcTarget.secure && this.tlsOptions && this.tlsOptions.servername) {
+            channelOptions["grpc.ssl_target_name_override"] = this.tlsOptions.servername;
+        }
         this.client = new backrestPackage.Backrest(
             grpcTarget.target,
-            grpcTarget.secure ? grpc.credentials.createSsl() : grpc.credentials.createInsecure()
+            grpcTarget.secure ? this.createSslCredentials() : grpc.credentials.createInsecure(),
+            channelOptions
         );
+    };
+
+    /**
+     * Read the TLS options from the selected tls-config node, if any.
+     */
+    BackrestConfigNode.prototype.buildTlsOptions = function() {
+        if (!this.tlsConfig) return null;
+        const opts = {};
+        this.tlsConfig.addTLSOptions(opts);
+        return opts;
+    };
+
+    /**
+     * gRPC credentials for an https:// URL, using the TLS config node's settings.
+     */
+    BackrestConfigNode.prototype.createSslCredentials = function() {
+        const opts = this.tlsOptions;
+        if (!opts) return grpc.credentials.createSsl();
+        if (opts.pfx) {
+            this.warn("PKCS#12 certificates aren't supported for Operation Events and Get Logs; use PEM files instead.");
+        }
+        const toBuffer = v => (v === undefined || v === null ? null : Buffer.isBuffer(v) ? v : Buffer.from(String(v)));
+        const verifyOptions = {};
+        if (opts.rejectUnauthorized === false) {
+            verifyOptions.rejectUnauthorized = false;
+            verifyOptions.checkServerIdentity = () => undefined;
+        }
+        return grpc.credentials.createSsl(toBuffer(opts.ca), toBuffer(opts.key), toBuffer(opts.cert), verifyOptions);
+    };
+
+    /**
+     * Options for HTTP requests to this Backrest server (auth and TLS).
+     */
+    BackrestConfigNode.prototype.requestOptions = function() {
+        return {
+            headers: { "Content-Type": "application/json" },
+            auth: (this.username && this.password) ? { username: this.username, password: this.password } : undefined,
+            httpsAgent: this.httpsAgent
+        };
+    };
+
+    /**
+     * Call a Backrest API method (such as "GetConfig") and resolve with the response body.
+     * Errors include Backrest's own error message when there is one.
+     */
+    BackrestConfigNode.prototype.request = async function(method, body = {}) {
+        if (!this.backrest_url) {
+            throw new Error("No Backrest URL configured");
+        }
+        try {
+            const res = await axios.post(`${this.backrest_url}/v1.Backrest/${method}`, body, this.requestOptions());
+            return res.data;
+        } catch (err) {
+            const data = err.response && err.response.data;
+            const detail = data && typeof data === "object" && data.message ? data.message
+                : typeof data === "string" && data ? data.trim() : err.message;
+            const status = err.response ? ` (${err.response.status})` : "";
+            const wrapped = new Error(`Backrest ${method} failed${status}: ${detail}`);
+            wrapped.status = err.response && err.response.status;
+            wrapped.code = data && data.code;
+            throw wrapped;
+        }
     };
 
     /**
