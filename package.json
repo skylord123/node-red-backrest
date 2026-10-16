@@ -22,7 +22,8 @@
       "backrest-config": "backrest-config.js",
       "backrest-api": "backrest-api.js",
       "backrest-operation-events": "backrest-operation-events.js",
-      "backrest-get-logs": "backrest-get-logs.js"
+      "backrest-get-logs": "backrest-get-logs.js",
+      "backrest-run-backup": "backrest-run-backup.js"
     }
   },
   "dependencies": {

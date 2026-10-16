@@ -1,0 +1,147 @@
+<script src="resources/@skylord123/node-red-contrib-backrest/backrest-editor.js"></script>
+<script type="text/javascript">
+    RED.nodes.registerType('backrest-run-backup', {
+        category: 'backrest',
+        color: "#00e4d3",
+        defaults: {
+            name: { value: "" },
+            config: { type: "backrest-config", required: true },
+            planValue: { value: "" },
+            planType: { value: "backrest-plan" },
+            dryRunValue: { value: "false" },
+            dryRunType: { value: "bool" },
+            wait: { value: true }
+        },
+        inputs: 1,
+        outputs: 2,
+        icon: "node-red-contrib-backrest-logo.png",
+        paletteLabel: "Run Backup",
+        label: function () {
+            if (this.name) return this.name;
+            if (this.planType === "backrest-plan" && this.planValue) return `Back up ${this.planValue}`;
+            return "Run Backup";
+        },
+        outputLabels: function (index) {
+            if (index === 1) return "failed";
+            return this.wait === false ? "started" : "finished";
+        },
+        oneditprepare: function () {
+            BackrestEditor.picker({
+                input: "#node-input-planValue",
+                typeField: "#node-input-planType",
+                kind: "plan",
+                types: ["msg", "flow", "global", "str", "jsonata", "env"],
+                config: "#node-input-config",
+                value: this.planValue,
+                type: this.planType
+            });
+            $("#node-input-dryRunValue").typedInput({
+                types: ["bool", "msg", "flow", "global", "jsonata", "env"],
+                typeField: "#node-input-dryRunType"
+            });
+            $("#node-input-wait").on("change", function () {
+                $("#run-backup-wait-tip").text(this.checked
+                    ? "The first output sends a message when the backup finishes successfully (or with warnings), the second when it fails."
+                    : "The first output sends a message as soon as the backup has been queued.");
+            }).trigger("change");
+        },
+        oneditsave: function () {
+            this.planValue = $("#node-input-planValue").typedInput("value");
+            this.planType = $("#node-input-planValue").typedInput("type");
+            this.dryRunValue = $("#node-input-dryRunValue").typedInput("value");
+            this.dryRunType = $("#node-input-dryRunValue").typedInput("type");
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="backrest-run-backup">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name"/>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-config"><i class="fa fa-server"></i> Backrest Server</label>
+        <input type="text" id="node-input-config"/>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-planValue"><i class="fa fa-calendar-check-o"></i> Plan</label>
+        <input type="text" id="node-input-planValue" style="width:60%;"/>
+        <input type="hidden" id="node-input-planType"/>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-dryRunValue"><i class="fa fa-flask"></i> Dry run</label>
+        <input type="text" id="node-input-dryRunValue" style="width:60%;"/>
+        <input type="hidden" id="node-input-dryRunType"/>
+        <div style="margin-left:5px;"><small>A dry run checks what would be backed up without creating a snapshot.</small></div>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-wait"><i class="fa fa-hourglass-half"></i> Wait</label>
+        <label for="node-input-wait" style="width:auto;">
+            <input type="checkbox" id="node-input-wait" style="width:auto; margin:0 4px 0 0; vertical-align:baseline;"/>
+            Wait for the backup to finish
+        </label>
+        <div class="form-tips" id="run-backup-wait-tip" style="margin-top:5px;"></div>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="backrest-run-backup">
+    <p>Starts a backup of a Backrest plan and sends the result when it finishes.</p>
+
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt class="optional">any <span class="property-type">any</span></dt>
+        <dd>Any message starts a backup. When <b>Plan</b> or <b>Dry run</b> are set to read from the message, they are taken from it.</dd>
+    </dl>
+
+    <h3>Outputs</h3>
+    <ol class="node-ports">
+        <li>Finished
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">object</span></dt>
+                <dd>The backup result:
+                    <ul>
+                        <li><code>operationId</code>, <code>planId</code>, <code>repoId</code></li>
+                        <li><code>status</code> - <code>STATUS_SUCCESS</code> or <code>STATUS_WARNING</code> (some files couldn't be read)</li>
+                        <li><code>dryRun</code> - whether this was a dry run</li>
+                        <li><code>snapshotId</code> - the new snapshot (not set for dry runs)</li>
+                        <li><code>startTime</code>, <code>endTime</code> (milliseconds since 1970) and <code>durationMs</code></li>
+                        <li><code>summary</code> - restic's summary, such as <code>filesNew</code>, <code>filesChanged</code>, <code>dataAdded</code> and <code>totalBytesProcessed</code></li>
+                        <li><code>message</code> - Backrest's message about the backup, if any</li>
+                    </ul>
+                </dd>
+                <dt>operation <span class="property-type">object</span></dt>
+                <dd>The full Backrest operation.</dd>
+            </dl>
+        </li>
+        <li>Failed
+            <dl class="message-properties">
+                <dt>payload <span class="property-type">object</span></dt>
+                <dd>The same result, with <code>status</code> <code>STATUS_ERROR</code>, <code>STATUS_USER_CANCELLED</code> or <code>STATUS_SYSTEM_CANCELLED</code> and the error in <code>message</code>.</dd>
+            </dl>
+        </li>
+    </ol>
+    <p>Other properties of the input message are kept. When <b>Wait</b> is off, the first output sends the result as soon as the backup is queued (with <code>status</code> <code>STATUS_PENDING</code> or <code>STATUS_INPROGRESS</code>) and the second output is not used.</p>
+
+    <h3>Properties</h3>
+    <dl class="message-properties">
+        <dt>Backrest Server <span class="property-type">config</span></dt>
+        <dd>The Backrest server to use.</dd>
+
+        <dt>Plan <span class="property-type">plan | msg | flow | global | ...</span></dt>
+        <dd>The plan to back up. Pick it from the list (use the refresh button to reload it), or read the plan ID from the message, context or an environment variable.</dd>
+
+        <dt>Dry run <span class="property-type">bool | msg | ...</span></dt>
+        <dd>Simulate the backup without creating a snapshot.</dd>
+
+        <dt>Wait <span class="property-type">boolean</span></dt>
+        <dd>Wait for the backup to finish before sending a message.</dd>
+    </dl>
+
+    <h3>Details</h3>
+    <p>The node shows the backup's progress in its status. Several backups can run at once; Backrest queues backups to the same repository. If the node is stopped or redeployed while waiting, the backup keeps running in Backrest but no result is sent.</p>
+    <p>Errors starting the backup, such as an unknown plan, are sent to Catch nodes. The Get Logs node can stream a backup's log: pass it this node's output.</p>
+</script>

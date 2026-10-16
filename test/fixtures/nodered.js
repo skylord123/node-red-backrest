@@ -6,7 +6,8 @@ const NODES = [
     require("../../backrest-config.js"),
     require("../../backrest-api.js"),
     require("../../backrest-operation-events.js"),
-    require("../../backrest-get-logs.js")
+    require("../../backrest-get-logs.js"),
+    require("../../backrest-run-backup.js")
 ];
 
 /**
