@@ -31,6 +31,8 @@ The log of an operation picked in the editor, the output of a restic command run
 
 Pause a service while a backup runs: Backrest calls Node-RED before each backup of a plan and waits for it, and cancels the backup if Node-RED reports an error. A second call tells Node-RED when the backup has finished. The "Backrest setup" comment node has the hook commands to add to the plan in Backrest. This example uses only core Node-RED nodes.
 
+![Backrest Hooks example](Backrest%20Hooks.png)
+
 ### [API](API.json)
 
 Calls to many API endpoints: the config, the dashboard summary, operations, snapshots and their files, path autocomplete, and running a restic command.
