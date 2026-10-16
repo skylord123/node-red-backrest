@@ -21,6 +21,7 @@ describe("HTTPS Backrest URLs", function () {
 
     after(function () {
         nr.withNodes();
+        fs.rmSync(path.dirname(caFile), { recursive: true, force: true });
     });
 
     function flow(tls) {
