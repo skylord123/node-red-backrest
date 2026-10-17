@@ -12,8 +12,6 @@ module.exports = function (RED) {
         }
 
         const baseURL = serverConfig.backrest_url || '';
-        const username = serverConfig.credentials.username || '';
-        const password = serverConfig.credentials.password || '';
         const outputType = config.outputType || "msg";
         const outputValue = config.outputValue || "payload";
 
@@ -21,7 +19,7 @@ module.exports = function (RED) {
         const apiMap = {
             "/v1.Backrest/GetOperations": {
                 description: "Fetch the list of operations from the Backrest server.",
-                input: { type: "object", example: { lastN: 1000, selector: { repoId: "repo-id" } } },
+                input: { type: "object", example: { lastN: 1000, selector: { repoGuid: "repo-guid" } } },
                 output: { type: "array", description: "Array of operations with details (type, status, etc.)." }
             },
             "/v1.Backrest/GetConfig": {
@@ -36,13 +34,23 @@ module.exports = function (RED) {
             },
             "/v1.Backrest/CheckRepoExists": {
                 description: "Check if a repository exists on the Backrest server.",
-                input: { type: "object", example: { id: "repo-id" } },
-                output: { type: "boolean", description: "True if the repository exists, false otherwise." }
+                input: { type: "object", example: { repo: { id: "repo-id", uri: "/path/to/repo", password: "repo-password" } } },
+                output: { type: "object", description: "Object with exists (omitted when false), plus error and hostKeyUntrusted when the repository can't be reached." }
             },
             "/v1.Backrest/AddRepo": {
                 description: "Add a new repository to the Backrest server.",
-                input: { type: "object", example: { id: "repo-id", path: "/path/to/repo" } },
+                input: { type: "object", example: { repo: { id: "repo-id", uri: "/path/to/repo", password: "repo-password" } } },
                 output: { type: "object", description: "Updated config object including the new repository." }
+            },
+            "/v1.Backrest/RemoveRepo": {
+                description: "Remove a repository from the config and delete its history. Does not delete the repository on disk.",
+                input: { type: "object", example: { repoId: "repo-id" } },
+                output: { type: "object", description: "Updated config object without the removed repository." }
+            },
+            "/v1.Backrest/SetupSftp": {
+                description: "Generate an SSH key for an SFTP repository and add the host to known_hosts.",
+                input: { type: "object", example: { host: "sftp.example.com", port: "22", username: "backup" } },
+                output: { type: "object", description: "Public key, key path and known_hosts path, plus error if a step failed." }
             },
             "/v1.Backrest/GetOperationEvents": {
                 description: "Stream real-time operation events (created, updated, or deleted).",
@@ -60,28 +68,28 @@ module.exports = function (RED) {
                 output: { type: "object", description: "Contains the path and an array of file entries." }
             },
             "/v1.Backrest/Backup": {
-                description: "Schedule a backup operation.",
-                input: { type: "object", example: { value: "plan-id" } },
+                description: "Schedule a backup operation, optionally as a dry run.",
+                input: { type: "object", example: { value: "plan-id", dryRun: false } },
                 output: { type: "none", description: "No response body, indicates successful queueing." }
             },
             "/v1.Backrest/DoRepoTask": {
-                description: "Schedule a repository task (prune, stats, etc.).",
+                description: "Schedule a repository task (index snapshots, prune, check, stats, unlock or forget).",
                 input: { type: "object", example: { repoId: "repo-id", task: "TASK_PRUNE" } },
-                output: { type: "none", description: "No response body, indicates successful queueing." }
+                output: { type: "object", description: "Object with operationId of the scheduled task." }
             },
             "/v1.Backrest/Forget": {
                 description: "Schedule a forget operation to clean up snapshots.",
                 input: { type: "object", example: { repoId: "repo-id", planId: "plan-id", snapshotId: "snap-id" } },
-                output: { type: "none", description: "No response body, indicates successful queueing." }
+                output: { type: "object", description: "Object with operationId of the scheduled forget operation." }
             },
             "/v1.Backrest/Restore": {
                 description: "Schedule a restore operation for a snapshot.",
                 input: { type: "object", example: { planId: "plan-id", repoId: "repo-id", snapshotId: "snapshot-id", path: "/source/path", target: "/restore/path" } },
-                output: { type: "none", description: "No response body, indicates successful queueing." }
+                output: { type: "object", description: "Object with operationId of the scheduled restore operation." }
             },
             "/v1.Backrest/Cancel": {
                 description: "Attempt to cancel an operation by its ID.",
-                input: { type: "object", example: { value: 12345 } },
+                input: { type: "object", example: { operationId: 12345 } },
                 output: { type: "none", description: "No response body, indicates cancellation request submitted." }
             },
             "/v1.Backrest/GetLogs": {
@@ -92,11 +100,11 @@ module.exports = function (RED) {
             "/v1.Backrest/RunCommand": {
                 description: "Execute a custom Restic command on a repository.",
                 input: { type: "object", example: { repoId: "repo-id", command: "restic-command" } },
-                output: { type: "object", description: "Operation ID of the submitted command." }
+                output: { type: "object", description: "Object with operationId of the command's operation." }
             },
             "/v1.Backrest/GetDownloadURL": {
-                description: "Retrieve a signed URL for downloading forget operation results.",
-                input: { type: "object", example: { value: 12345 } },
+                description: "Retrieve a signed URL for downloading restore results or a file from a snapshot.",
+                input: { type: "object", example: { opId: 12345, filePath: "/path/in/snapshot/file.txt" } },
                 output: { type: "object", description: "Signed URL for downloading results." }
             },
             "/v1.Backrest/ClearHistory": {
@@ -113,6 +121,11 @@ module.exports = function (RED) {
                 description: "Retrieve summary data for the dashboard view.",
                 input: { type: "none", example: null },
                 output: { type: "object", description: "Summary metrics and stats for the dashboard." }
+            },
+            "/v1.Backrest/GeneratePairingToken": {
+                description: "Create a pairing token for multihost sync.",
+                input: { type: "object", example: { label: "my-laptop", ttlSeconds: 3600, maxUses: 1 } },
+                output: { type: "object", description: "The pairing token string." }
             }
         };
 
@@ -141,13 +154,9 @@ module.exports = function (RED) {
                     payload = {};
                 }
 
-                const headers = { 'Content-Type': 'application/json' };
                 const url = `${baseURL}${endpoint}`;
 
-                axios.post(url, payload, {
-                    headers,
-                    auth: (username && password) ? { username, password } : undefined
-                })
+                axios.post(url, payload, serverConfig.requestOptions())
                     .then(response => {
                         // Decide where to store output based on outputType + outputValue
                         switch (outputType) {
@@ -182,10 +191,5 @@ module.exports = function (RED) {
         });
     }
 
-    RED.nodes.registerType('backrest-api', BackrestQueryNode, {
-        credentials: {
-            username: { type: 'text' },
-            password: { type: 'password' }
-        }
-    });
+    RED.nodes.registerType('backrest-api', BackrestQueryNode);
 };

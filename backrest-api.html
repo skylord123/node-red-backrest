@@ -4,13 +4,13 @@
         const apiDetails = {
             "/v1.Backrest/GetOperations": {
                 label: "Get Operations",
-                description: "Fetch the list of operations from the Backrest server.",
+                description: "Fetch operations from the Backrest server. A selector is required and can filter by ids, repoGuid (the guid of a repo from Get Config, not its ID), planId, snapshotId, flowId, instanceId and modnoGte (only operations changed at or after this modno). Use an empty selector to match all operations.",
                 input: {
                     type: "object",
                     example: {
                         "lastN": 1000,
                         "selector": {
-                            "repoId": "repo-id"
+                            "repoGuid": "repo-guid"
                         }
                     }
                 },
@@ -24,7 +24,7 @@
                 input: {
                     type: "object",
                     example: {
-                        "value": 12345
+                        "operationId": 12345
                     }
                 },
                 output: {
@@ -33,24 +33,26 @@
             },
             "/v1.Backrest/GetDownloadURL": {
                 label: "Get Download URL",
-                description: "Retrieve a signed URL for downloading forget operation results.",
+                description: "Retrieve a signed URL for downloading the files of a restore operation, or a single file from a snapshot (pass the snapshot's index operation ID and filePath).",
                 input: {
                     type: "object",
                     example: {
-                        "value": 12345
+                        "opId": 12345,
+                        "filePath": "/path/in/snapshot/file.txt"
                     }
                 },
                 output: {
-                    description: "String containing the signed download URL."
+                    description: "Object with value set to the signed download URL, relative to the Backrest URL."
                 }
             },
             "/v1.Backrest/Backup": {
                 label: "Start Backup",
-                description: "Schedule a backup operation.",
+                description: "Schedule a backup of a plan. value is the plan ID. Set dryRun to true to simulate the backup without creating a snapshot.",
                 input: {
                     type: "object",
                     example: {
-                        "value": "plan-id"
+                        "value": "plan-id",
+                        "dryRun": false
                     }
                 },
                 output: {
@@ -71,7 +73,7 @@
                     }
                 },
                 output: {
-                    description: "No response body, operation successfully enqueued."
+                    description: "Object with operationId of the scheduled restore operation."
                 }
             },
             "/v1.Backrest/Forget": {
@@ -86,12 +88,12 @@
                     }
                 },
                 output: {
-                    description: "No response body, operation successfully enqueued."
+                    description: "Object with operationId of the scheduled forget operation."
                 }
             },
             "/v1.Backrest/DoRepoTask": {
                 label: "Run Repository Task",
-                description: "Schedule a repository task (e.g., prune, stats).",
+                description: "Schedule a repository task. task is one of TASK_INDEX_SNAPSHOTS, TASK_PRUNE, TASK_CHECK, TASK_STATS, TASK_UNLOCK or TASK_FORGET (TASK_FORGET needs a forget policy on the repository).",
                 input: {
                     type: "object",
                     example: {
@@ -100,7 +102,7 @@
                     }
                 },
                 output: {
-                    description: "No response body, task successfully enqueued."
+                    description: "Object with operationId of the scheduled task."
                 }
             },
             "/v1.Backrest/RunCommand": {
@@ -114,7 +116,7 @@
                     }
                 },
                 output: {
-                    description: "Operation ID of the executed command."
+                    description: "Object with operationId of the command's operation. Its output can be streamed with the Get Logs node."
                 }
             },
             "/v1.Backrest/ListSnapshots": {
@@ -187,11 +189,15 @@
                 input: {
                     type: "object",
                     example: {
-                        "id": "repo-id"
+                        "repo": {
+                            "id": "repo-id",
+                            "uri": "/path/to/repo",
+                            "password": "repo-password"
+                        }
                     }
                 },
                 output: {
-                    description: "Boolean indicating if the repository exists."
+                    description: "Object with exists (omitted when false), plus error and hostKeyUntrusted when the repository can't be reached."
                 }
             },
             "/v1.Backrest/AddRepo": {
@@ -200,12 +206,61 @@
                 input: {
                     type: "object",
                     example: {
-                        "id": "repo-id",
-                        "path": "/path/to/repo"
+                        "repo": {
+                            "id": "repo-id",
+                            "uri": "/path/to/repo",
+                            "password": "repo-password"
+                        }
                     }
                 },
                 output: {
                     description: "Updated configuration including the new repository."
+                }
+            },
+            "/v1.Backrest/RemoveRepo": {
+                label: "Remove Repository",
+                description: "Remove a repository from Backrest and delete its operation history. The repository's data on disk is not deleted.",
+                input: {
+                    type: "object",
+                    example: {
+                        "repoId": "repo-id"
+                    }
+                },
+                output: {
+                    description: "Updated configuration without the removed repository."
+                }
+            },
+            "/v1.Backrest/SetupSftp": {
+                label: "Set Up SFTP",
+                description: "Generate an SSH key for an SFTP repository and add the host to known_hosts. Add the returned public key to the SFTP server's authorized_keys yourself. Not supported when Backrest runs on Windows.",
+                input: {
+                    type: "object",
+                    example: {
+                        "host": "sftp.example.com",
+                        "port": "22",
+                        "username": "backup"
+                    }
+                },
+                output: {
+                    description: "Object with publicKey, keyPath and knownHostsPath, plus error if a step failed."
+                }
+            },
+            "/v1.Backrest/GeneratePairingToken": {
+                label: "Generate Pairing Token",
+                description: "Create a token that another Backrest instance can use to pair with this one for multihost sync.",
+                input: {
+                    type: "object",
+                    example: {
+                        "label": "my-laptop",
+                        "ttlSeconds": 3600,
+                        "maxUses": 1,
+                        "permissions": [
+                            { "type": "PERMISSION_READ_OPERATIONS", "scopes": ["*"] }
+                        ]
+                    }
+                },
+                output: {
+                    description: "Object with the pairing token string."
                 }
             },
             "/v1.Backrest/ClearHistory": {

@@ -1,0 +1,156 @@
+<script src="resources/@skylord123/node-red-contrib-backrest/backrest-editor.js"></script>
+<script type="text/javascript">
+    RED.nodes.registerType('backrest-backup-status', {
+        category: 'backrest',
+        color: "#00e4d3",
+        defaults: {
+            name: { value: "" },
+            config: { type: "backrest-config", required: true },
+            show: { value: "plans" },
+            targetValue: { value: "" },
+            targetType: { value: "backrest-any" },
+            output: { value: "each" },
+            onlyProblems: { value: false }
+        },
+        inputs: 1,
+        outputs: 1,
+        icon: "node-red-contrib-backrest-logo.png",
+        paletteLabel: "Backup Status",
+        label: function () {
+            if (this.name) return this.name;
+            if ((this.targetType === "backrest-plan" || this.targetType === "backrest-repo") && this.targetValue) {
+                return `Status of ${this.targetValue}`;
+            }
+            return "Backup Status";
+        },
+        oneditprepare: function () {
+            const kindFor = show => (show === "repos" ? "repo" : "plan");
+            const anyFor = show => (show === "repos" ? "All repositories" : "All plans");
+            let currentShow = $("#node-input-show").val() || "plans";
+
+            // The saved type may be the picker for the other kind (backrest-plan vs backrest-repo).
+            let savedType = this.targetType;
+            if (savedType === "backrest-plan" || savedType === "backrest-repo") {
+                savedType = currentShow === "repos" ? "backrest-repo" : "backrest-plan";
+            }
+            const options = {
+                input: "#node-input-targetValue",
+                typeField: "#node-input-targetType",
+                kind: kindFor(currentShow),
+                any: anyFor(currentShow),
+                types: ["msg", "flow", "global", "str", "env"],
+                config: "#node-input-config",
+                value: this.targetValue,
+                type: savedType
+            };
+            const picker = BackrestEditor.picker(options);
+
+            $("#node-input-show").on("change", function () {
+                const show = $(this).val();
+                if (show === currentShow) return;
+                currentShow = show;
+                options.any = anyFor(show);
+                picker.setKind(kindFor(show));
+                $("#backup-status-target-label").text(show === "repos" ? " Repository" : " Plan");
+            });
+            $("#backup-status-target-label").text(currentShow === "repos" ? " Repository" : " Plan");
+        },
+        oneditsave: function () {
+            this.targetValue = $("#node-input-targetValue").typedInput("value");
+            this.targetType = $("#node-input-targetValue").typedInput("type");
+        }
+    });
+</script>
+
+<script type="text/html" data-template-name="backrest-backup-status">
+    <div class="form-row">
+        <label for="node-input-name"><i class="fa fa-tag"></i> Name</label>
+        <input type="text" id="node-input-name"/>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-config"><i class="fa fa-server"></i> Backrest Server</label>
+        <input type="text" id="node-input-config"/>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-show"><i class="fa fa-eye"></i> Status of</label>
+        <select id="node-input-show" style="width:70%;">
+            <option value="plans">Plans</option>
+            <option value="repos">Repositories</option>
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-targetValue"><i class="fa fa-crosshairs"></i><span id="backup-status-target-label"> Plan</span></label>
+        <input type="text" id="node-input-targetValue" style="width:60%;"/>
+        <input type="hidden" id="node-input-targetType"/>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-output"><i class="fa fa-sign-out"></i> Output</label>
+        <select id="node-input-output" style="width:70%;">
+            <option value="each">One message per plan or repository</option>
+            <option value="all">One message with a list</option>
+        </select>
+    </div>
+
+    <div class="form-row">
+        <label for="node-input-onlyProblems">&nbsp;</label>
+        <label for="node-input-onlyProblems" style="width:auto;">
+            <input type="checkbox" id="node-input-onlyProblems" style="width:auto; margin:0 4px 0 0; vertical-align:baseline;"/>
+            Only send ones that need attention (failed, warning or overdue)
+        </label>
+    </div>
+</script>
+
+<script type="text/html" data-help-name="backrest-backup-status">
+    <p>Reports how the backups of each plan or repository are doing, using the same rules as the Backrest dashboard. Use it with an Inject node to check regularly and alert when something needs attention.</p>
+
+    <h3>Inputs</h3>
+    <dl class="message-properties">
+        <dt class="optional">any <span class="property-type">any</span></dt>
+        <dd>Any message runs the check. When <b>Plan</b> or <b>Repository</b> is set to read from the message, it is taken from it.</dd>
+    </dl>
+
+    <h3>Outputs</h3>
+    <dl class="message-properties">
+        <dt>payload <span class="property-type">object | array</span></dt>
+        <dd>The status of a plan or repository (or a list of them):
+            <ul>
+                <li><code>type</code> (<code>plan</code> or <code>repo</code>), <code>id</code>, and for plans <code>repo</code></li>
+                <li><code>state</code> - from the latest backup: <code>ok</code>, <code>warning</code>, <code>error</code>, <code>running</code> or <code>idle</code> (no backups yet)</li>
+                <li><code>overdue</code> - true when no successful backup has happened for longer than the plan's schedule allows (Backrest 1.14 or newer)</li>
+                <li><code>healthy</code> - true when <code>state</code> isn't <code>warning</code> or <code>error</code> and it isn't overdue</li>
+                <li><code>lastBackup</code> - <code>status</code>, <code>time</code> (milliseconds since 1970), <code>durationMs</code> and <code>bytesAdded</code> of the latest backup, or null</li>
+                <li><code>nextBackupTime</code> - when the next scheduled backup runs, or null</li>
+                <li><code>protectedBytes</code> - size of the data covered by the latest successful backup</li>
+                <li><code>totalSnapshots</code></li>
+                <li><code>last30Days</code> - <code>success</code>, <code>warning</code> and <code>failed</code> backup counts, <code>bytesAdded</code>, <code>bytesScanned</code> and <code>missedDays</code> (days flagged overdue)</li>
+            </ul>
+        </dd>
+        <dt>topic <span class="property-type">string</span></dt>
+        <dd>The plan or repository ID (one message per plan or repository).</dd>
+        <dt>healthy <span class="property-type">boolean</span></dt>
+        <dd>Whether everything in the list is healthy (one message with a list).</dd>
+    </dl>
+    <p>Other properties of the input message are kept.</p>
+
+    <h3>Properties</h3>
+    <dl class="message-properties">
+        <dt>Status of <span class="property-type">select</span></dt>
+        <dd>Report on plans or repositories.</dd>
+
+        <dt>Plan / Repository <span class="property-type">all | plan | repository | msg | ...</span></dt>
+        <dd>Report on all of them, one picked from the list (use the refresh button to reload it), or one whose ID is read from the message, context or an environment variable.</dd>
+
+        <dt>Output <span class="property-type">select</span></dt>
+        <dd>Send one message for each plan or repository, or a single message with a list.</dd>
+
+        <dt>Only send ones that need attention <span class="property-type">boolean</span></dt>
+        <dd>Leave out healthy plans or repositories. When everything is healthy no message is sent, so you can wire the output straight to a notification.</dd>
+    </dl>
+
+    <h3>Status</h3>
+    <p>The node's status counts the states found, such as <code>1 error, 2 ok</code>.</p>
+</script>

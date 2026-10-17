@@ -5,7 +5,9 @@
             name: { value: '' },
             autoReconnect: { value: true },
             reconnectInterval: { value: 1000 },
-            reconnectTries: { value: 0 }
+            reconnectTries: { value: 0 },
+            catchUp: { value: true },
+            tls: { type: "tls-config", required: false }
         },
         credentials: {
             backrest_url: { type: 'text' },
@@ -30,12 +32,26 @@
             }
             $("#node-config-input-autoReconnect").on("change", toggleReconnectFields);
             toggleReconnectFields();
+
+            // Config nodes from before 1.0 have no catchUp setting; it defaults to on.
+            if (this.catchUp === undefined) {
+                $("#node-config-input-catchUp").prop("checked", true);
+            }
+
+            // TLS settings only apply to https:// URLs
+            function toggleTlsRow() {
+                const url = $("#node-config-input-backrest_url").val() || "";
+                $("#node-config-tls-row").toggle(/^https:\/\//i.test(url.trim()));
+            }
+            $("#node-config-input-backrest_url").on("input change", toggleTlsRow);
+            toggleTlsRow();
         },
         oneditsave: function() {
             // Read the text/checkbox values and store them in node properties
             this.autoReconnect = $("#node-config-input-autoReconnect").is(":checked");
             this.reconnectInterval = $("#node-config-input-reconnectInterval").val();
             this.reconnectTries = $("#node-config-input-reconnectTries").val();
+            this.catchUp = $("#node-config-input-catchUp").is(":checked");
         }
     });
 </script>
@@ -53,6 +69,16 @@
             <i class="fa fa-server"></i> Backrest URL
         </label>
         <input type="text" id="node-config-input-backrest_url" placeholder="e.g. http://localhost:9898" />
+    </div>
+
+    <div class="form-row" id="node-config-tls-row">
+        <label for="node-config-input-tls">
+            <i class="fa fa-lock"></i> TLS
+        </label>
+        <input type="text" id="node-config-input-tls" />
+        <div style="margin-left:5px;">
+            <small>Optional. Use a TLS configuration to trust a self-signed certificate or a private CA.</small>
+        </div>
     </div>
 
     <div class="form-row">
@@ -92,6 +118,16 @@
                 <small>Set to 0 for infinite.</small>
             </div>
         </div>
+        <div class="form-row">
+            <label for="node-config-input-catchUp">&nbsp;</label>
+            <label for="node-config-input-catchUp" style="width:auto;">
+                <input type="checkbox" id="node-config-input-catchUp" style="width:auto; margin:0 4px 0 0; vertical-align:baseline;" />
+                Catch up on missed events
+            </label>
+            <div style="margin-left:5px;">
+                <small>After reconnecting, send the operations that changed while disconnected.</small>
+            </div>
+        </div>
     </div>
 </script>
 
@@ -108,7 +144,12 @@
         <dt>Backrest URL
             <span class="property-type">string</span>
         </dt>
-        <dd>URL of your Backrest server (e.g., http://localhost:9898).</dd>
+        <dd>URL of your Backrest server (e.g., http://localhost:9898). Use an https:// URL when Backrest is behind a reverse proxy with TLS; the proxy must support HTTP/2 for Operation Events and Get Logs to work. For a self-signed certificate or a private CA, choose a TLS configuration.</dd>
+
+        <dt class="optional">TLS
+            <span class="property-type">tls-config</span>
+        </dt>
+        <dd>Only shown for https:// URLs. Set the CA certificate here to trust a self-signed or private certificate, or turn off "Verify server certificate" to skip checking it (not recommended).</dd>
 
         <dt class="optional">Username
             <span class="property-type">string</span>
@@ -134,6 +175,11 @@
             <span class="property-type">number</span>
         </dt>
         <dd>Maximum number of reconnection attempts (0 for infinite).</dd>
+
+        <dt>Catch up on missed events
+            <span class="property-type">boolean</span>
+        </dt>
+        <dd>After the event stream reconnects, send Operation Events (and Run Backup) the operations that changed while it was disconnected, marked with <code>catchUp</code>. On by default.</dd>
     </dl>
 
     <h3>Details</h3>

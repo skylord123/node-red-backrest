@@ -1,29 +1,55 @@
 {
   "name": "@skylord123/node-red-contrib-backrest",
-  "version": "0.0.1",
+  "version": "1.0.0",
   "description": "Node-RED nodes for interacting with Backrest, a restic-powered backup management tool.",
   "main": "backrest-config.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha"
   },
   "author": "skylord123",
   "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/skylord123/node-red-backrest/issues"
+  },
+  "homepage": "https://github.com/skylord123/node-red-backrest",
   "keywords": [
     "node-red",
     "backrest",
     "restic"
   ],
   "node-red": {
+    "version": ">=4.0.0",
     "nodes": {
       "backrest-config": "backrest-config.js",
       "backrest-api": "backrest-api.js",
       "backrest-operation-events": "backrest-operation-events.js",
-      "backrest-get-logs": "backrest-get-logs.js"
+      "backrest-get-logs": "backrest-get-logs.js",
+      "backrest-run-backup": "backrest-run-backup.js",
+      "backrest-backup-status": "backrest-backup-status.js"
     }
   },
   "dependencies": {
     "@grpc/grpc-js": "^1.12.5",
     "@grpc/proto-loader": "^0.7.13",
     "axios": "^1.7.9"
+  },
+  "devDependencies": {
+    "mocha": "12.0.2",
+    "node-red": "5.0.7",
+    "node-red-node-test-helper": "0.3.6"
+  },
+  "files": [
+    "*.js",
+    "*.html",
+    "lib/",
+    "resources/",
+    "icons/",
+    "examples/",
+    "proto/",
+    "LICENSE",
+    "README.md"
+  ],
+  "engines": {
+    "node": ">=18"
   }
 }

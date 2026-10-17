@@ -1,0 +1,227 @@
+[
+    {
+        "id": "7800dfc10f4e4ff6",
+        "type": "group",
+        "z": "076f798f31fdb681",
+        "name": "Pause a service while a backup runs",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "cea8d592763cdf68",
+            "c9e9d291113921ec",
+            "0fd0f7723b222007",
+            "440b1a2682249ea3",
+            "53c495defde9f98f",
+            "e02bb19b27647a89",
+            "c8cab90916801626",
+            "c9dcf6a0e3909a2f",
+            "c15323656bd5f29a",
+            "a0b8106f1d9f0b13",
+            "01c7fe66b916716b",
+            "93847373a1bce02c"
+        ],
+        "x": 96,
+        "y": 39,
+        "w": 1207,
+        "h": 232,
+        "info": "Backrest calls Node-RED before and after each backup of a plan, so a service can be stopped while it is backed up. See the Backrest setup comment node for the hook settings."
+    },
+    {
+        "type": "http in",
+        "name": "",
+        "url": "/backrest-hook/start",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "id": "cea8d592763cdf68",
+        "z": "076f798f31fdb681",
+        "g": "7800dfc10f4e4ff6",
+        "x": 230,
+        "y": 80,
+        "wires": [
+            [
+                "c9e9d291113921ec"
+            ]
+        ]
+    },
+    {
+        "type": "json",
+        "name": "",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "id": "c9e9d291113921ec",
+        "z": "076f798f31fdb681",
+        "g": "7800dfc10f4e4ff6",
+        "x": 470,
+        "y": 80,
+        "wires": [
+            [
+                "0fd0f7723b222007"
+            ]
+        ]
+    },
+    {
+        "type": "function",
+        "name": "Stop the service",
+        "func": "// Do whatever must happen before the backup here, for example\n// stop a container with a Docker or exec node. Backrest waits\n// until the response is sent, then starts the backup.\n// If this fails, the Catch node tells Backrest to cancel it.\nnode.status({ fill: \"blue\", shape: \"dot\", text: `paused for ${msg.payload.plan}` });\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "0fd0f7723b222007",
+        "z": "076f798f31fdb681",
+        "g": "7800dfc10f4e4ff6",
+        "x": 720,
+        "y": 80,
+        "wires": [
+            [
+                "440b1a2682249ea3"
+            ]
+        ]
+    },
+    {
+        "type": "http response",
+        "name": "Start the backup",
+        "statusCode": "",
+        "headers": {},
+        "id": "440b1a2682249ea3",
+        "z": "076f798f31fdb681",
+        "g": "7800dfc10f4e4ff6",
+        "x": 1010,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "type": "catch",
+        "name": "Couldn't stop",
+        "uncaught": false,
+        "id": "53c495defde9f98f",
+        "z": "076f798f31fdb681",
+        "g": "7800dfc10f4e4ff6",
+        "x": 720,
+        "y": 130,
+        "scope": [
+            "0fd0f7723b222007"
+        ],
+        "wires": [
+            [
+                "e02bb19b27647a89"
+            ]
+        ]
+    },
+    {
+        "type": "function",
+        "name": "Cancel the backup",
+        "func": "msg.statusCode = 500;\nmsg.payload = `Couldn't prepare for the backup: ${msg.error.message}`;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "e02bb19b27647a89",
+        "z": "076f798f31fdb681",
+        "g": "7800dfc10f4e4ff6",
+        "x": 1010,
+        "y": 130,
+        "wires": [
+            [
+                "c8cab90916801626"
+            ]
+        ]
+    },
+    {
+        "type": "http response",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "id": "c8cab90916801626",
+        "z": "076f798f31fdb681",
+        "g": "7800dfc10f4e4ff6",
+        "x": 1230,
+        "y": 130,
+        "wires": []
+    },
+    {
+        "type": "http in",
+        "name": "",
+        "url": "/backrest-hook/end",
+        "method": "post",
+        "upload": false,
+        "swaggerDoc": "",
+        "id": "c9dcf6a0e3909a2f",
+        "z": "076f798f31fdb681",
+        "g": "7800dfc10f4e4ff6",
+        "x": 230,
+        "y": 180,
+        "wires": [
+            [
+                "c15323656bd5f29a"
+            ]
+        ]
+    },
+    {
+        "type": "json",
+        "name": "",
+        "property": "payload",
+        "action": "obj",
+        "pretty": false,
+        "id": "c15323656bd5f29a",
+        "z": "076f798f31fdb681",
+        "g": "7800dfc10f4e4ff6",
+        "x": 470,
+        "y": 180,
+        "wires": [
+            [
+                "a0b8106f1d9f0b13"
+            ]
+        ]
+    },
+    {
+        "type": "function",
+        "name": "Start the service again",
+        "func": "// Do whatever must happen after the backup here, for example\n// start the container again. payload.error is set when the\n// backup failed.\nconst p = msg.payload;\nnode.status({\n    fill: p.error ? \"red\" : \"green\", shape: \"dot\",\n    text: p.error ? `backup of ${p.plan} failed` : `backup of ${p.plan} done`\n});\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "a0b8106f1d9f0b13",
+        "z": "076f798f31fdb681",
+        "g": "7800dfc10f4e4ff6",
+        "x": 720,
+        "y": 180,
+        "wires": [
+            [
+                "01c7fe66b916716b"
+            ]
+        ]
+    },
+    {
+        "type": "http response",
+        "name": "",
+        "statusCode": "",
+        "headers": {},
+        "id": "01c7fe66b916716b",
+        "z": "076f798f31fdb681",
+        "g": "7800dfc10f4e4ff6",
+        "x": 1010,
+        "y": 180,
+        "wires": []
+    },
+    {
+        "type": "comment",
+        "name": "Backrest setup",
+        "info": "### Backrest setup\n\nBackrest runs a command before each backup and waits for it. The command asks Node-RED to get ready, and if Node-RED reports an error the backup is cancelled. A second command tells Node-RED when the backup has finished (also when it failed).\n\nIn Backrest, edit the plan, click **Add Hook**, choose **Command** and add these two hooks. Replace `NODE-RED-HOST` with the address Backrest can reach Node-RED at (from a Docker container that's the host's IP or a shared network, not `localhost`).\n\n**Hook 1**: runs when `CONDITION_SNAPSHOT_START`, Error Behavior `ON_ERROR_CANCEL`, command:\n\n```\ncurl -fsS -m 300 -X POST -H 'Content-Type: application/json' --data-binary @- http://NODE-RED-HOST:1880/backrest-hook/start <<'JSON'\n{\"event\": {{ .JsonMarshal (.EventName .Event) }}, \"plan\": {{ .JsonMarshal .Plan.Id }}, \"repo\": {{ .JsonMarshal .Repo.Id }}, \"snapshotId\": {{ .JsonMarshal .SnapshotId }}, \"error\": {{ .JsonMarshal .Error }}}\nJSON\n```\n\n**Hook 2**: runs when `CONDITION_SNAPSHOT_END`, Error Behavior `ON_ERROR_IGNORE`, command:\n\n```\ncurl -fsS -m 300 -X POST -H 'Content-Type: application/json' --data-binary @- http://NODE-RED-HOST:1880/backrest-hook/end <<'JSON'\n{\"event\": {{ .JsonMarshal (.EventName .Event) }}, \"plan\": {{ .JsonMarshal .Plan.Id }}, \"repo\": {{ .JsonMarshal .Repo.Id }}, \"snapshotId\": {{ .JsonMarshal .SnapshotId }}, \"error\": {{ .JsonMarshal .Error }}}\nJSON\n```\n\nThe backup waits until Node-RED responds (at most 5 minutes, set by `-m 300`), so keep the flows short. If the start flow fails, the backup is cancelled and the end hook doesn't run.\n\n**If Node-RED is down** (or Backrest can't reach it), the start hook fails too, so the backup is cancelled. To have Backrest try again later instead, set Hook 1's Error Behavior to `ON_ERROR_RETRY_10MINUTES`. To run the backup anyway, use `ON_ERROR_IGNORE`, but then Node-RED can't cancel backups either.",
+        "id": "93847373a1bce02c",
+        "z": "076f798f31fdb681",
+        "g": "7800dfc10f4e4ff6",
+        "x": 230,
+        "y": 230
+    }
+]

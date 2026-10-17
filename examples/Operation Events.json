@@ -1,0 +1,360 @@
+[
+    {
+        "id": "06bd2857df140cc4",
+        "type": "backrest-config",
+        "name": "Example",
+        "autoReconnect": true,
+        "reconnectInterval": "1000",
+        "reconnectTries": "0",
+        "tls": ""
+    },
+    {
+        "id": "797b42632c64c876",
+        "type": "group",
+        "z": "2b00c9e2a60010ae",
+        "name": "Every finished backup",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "945617614a3d7b08",
+            "15af7a1c446af0da",
+            "58f590906c0c8992"
+        ],
+        "x": 97,
+        "y": 39,
+        "w": 676,
+        "h": 82
+    },
+    {
+        "type": "backrest-operation-events",
+        "name": "",
+        "config": "06bd2857df140cc4",
+        "mode": "always",
+        "triggerValue": "payload",
+        "triggerType": "msg",
+        "output": "operation",
+        "when": "final",
+        "planValue": "",
+        "planType": "backrest-any",
+        "repoValue": "",
+        "repoType": "backrest-any",
+        "types": [
+            "backup"
+        ],
+        "id": "945617614a3d7b08",
+        "z": "2b00c9e2a60010ae",
+        "g": "797b42632c64c876",
+        "x": 210,
+        "y": 80,
+        "wires": [
+            [
+                "15af7a1c446af0da"
+            ]
+        ],
+        "inputs": 0
+    },
+    {
+        "type": "function",
+        "name": "Describe",
+        "func": "const op = msg.payload;\nconst seconds = (Number(op.unixTimeEndMs) - Number(op.unixTimeStartMs)) / 1000;\nmsg.payload = `${op.planId}: ${msg.status.replace(\"STATUS_\", \"\").toLowerCase()} after ${Math.round(seconds)}s`;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "15af7a1c446af0da",
+        "z": "2b00c9e2a60010ae",
+        "g": "797b42632c64c876",
+        "x": 440,
+        "y": 80,
+        "wires": [
+            [
+                "58f590906c0c8992"
+            ]
+        ]
+    },
+    {
+        "type": "debug",
+        "name": "Finished backups",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "id": "58f590906c0c8992",
+        "z": "2b00c9e2a60010ae",
+        "g": "797b42632c64c876",
+        "x": 660,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "id": "693f65c94bc05f9f",
+        "type": "group",
+        "z": "2b00c9e2a60010ae",
+        "name": "Status changes of one plan",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "3440d31e72f0cc80",
+            "67684eaff430372f"
+        ],
+        "x": 97,
+        "y": 150,
+        "w": 472,
+        "h": 82,
+        "info": "Pick the plan in the Operation Events node. A message is sent when an operation starts and each time its status changes."
+    },
+    {
+        "type": "backrest-operation-events",
+        "name": "",
+        "config": "06bd2857df140cc4",
+        "mode": "always",
+        "triggerValue": "payload",
+        "triggerType": "msg",
+        "output": "operation",
+        "when": "status",
+        "planValue": "",
+        "planType": "backrest-plan",
+        "repoValue": "",
+        "repoType": "backrest-any",
+        "types": [],
+        "id": "3440d31e72f0cc80",
+        "z": "2b00c9e2a60010ae",
+        "g": "693f65c94bc05f9f",
+        "x": 210,
+        "y": 191,
+        "wires": [
+            [
+                "67684eaff430372f"
+            ]
+        ],
+        "inputs": 0
+    },
+    {
+        "type": "debug",
+        "name": "Plan operations",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "id": "67684eaff430372f",
+        "z": "2b00c9e2a60010ae",
+        "g": "693f65c94bc05f9f",
+        "x": 460,
+        "y": 191,
+        "wires": []
+    },
+    {
+        "id": "5758acf6006553f5",
+        "type": "group",
+        "z": "2b00c9e2a60010ae",
+        "name": "Live backup progress",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "75d21bfd5fc50290",
+            "a3525ea55c114053",
+            "da41c79ba0c6fa27"
+        ],
+        "x": 97,
+        "y": 261,
+        "w": 672,
+        "h": 82,
+        "info": "With Send set to every update, Operation Events also sends the progress updates of running backups."
+    },
+    {
+        "type": "backrest-operation-events",
+        "name": "",
+        "config": "06bd2857df140cc4",
+        "mode": "always",
+        "triggerValue": "payload",
+        "triggerType": "msg",
+        "output": "operation",
+        "when": "all",
+        "planValue": "",
+        "planType": "backrest-any",
+        "repoValue": "",
+        "repoType": "backrest-any",
+        "types": [
+            "backup"
+        ],
+        "id": "75d21bfd5fc50290",
+        "z": "2b00c9e2a60010ae",
+        "g": "5758acf6006553f5",
+        "x": 210,
+        "y": 302,
+        "wires": [
+            [
+                "a3525ea55c114053"
+            ]
+        ],
+        "inputs": 0
+    },
+    {
+        "type": "function",
+        "name": "Progress",
+        "func": "const status = msg.payload.operationBackup && msg.payload.operationBackup.lastStatus &&\n    msg.payload.operationBackup.lastStatus.status;\nif (msg.status !== \"STATUS_INPROGRESS\" || !status) return null;\nmsg.payload = `${msg.payload.planId}: ${Math.round(status.percentDone * 100)}% (${status.filesDone || 0} files)`;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "a3525ea55c114053",
+        "z": "2b00c9e2a60010ae",
+        "g": "5758acf6006553f5",
+        "x": 440,
+        "y": 302,
+        "wires": [
+            [
+                "da41c79ba0c6fa27"
+            ]
+        ]
+    },
+    {
+        "type": "debug",
+        "name": "Backup progress",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "id": "da41c79ba0c6fa27",
+        "z": "2b00c9e2a60010ae",
+        "g": "5758acf6006553f5",
+        "x": 660,
+        "y": 302,
+        "wires": []
+    },
+    {
+        "id": "44b21cf9dacb179b",
+        "type": "group",
+        "z": "2b00c9e2a60010ae",
+        "name": "Subscribe on demand to raw events",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "9ad60cdab9adfec8",
+            "07564d5f70b6403a",
+            "79d8ef1910e6e863",
+            "81748a48ac832a08"
+        ],
+        "x": 96,
+        "y": 372,
+        "w": 613,
+        "h": 132,
+        "info": "Raw events are sent as Backrest sends them: payload.createdOperations, payload.updatedOperations or payload.deletedOperations."
+    },
+    {
+        "type": "inject",
+        "name": "Start",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "true",
+        "payloadType": "bool",
+        "id": "9ad60cdab9adfec8",
+        "z": "2b00c9e2a60010ae",
+        "g": "44b21cf9dacb179b",
+        "x": 170,
+        "y": 413,
+        "wires": [
+            [
+                "79d8ef1910e6e863"
+            ]
+        ]
+    },
+    {
+        "type": "inject",
+        "name": "Stop",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "false",
+        "payloadType": "bool",
+        "id": "07564d5f70b6403a",
+        "z": "2b00c9e2a60010ae",
+        "g": "44b21cf9dacb179b",
+        "x": 170,
+        "y": 463,
+        "wires": [
+            [
+                "79d8ef1910e6e863"
+            ]
+        ]
+    },
+    {
+        "type": "backrest-operation-events",
+        "name": "",
+        "config": "06bd2857df140cc4",
+        "mode": "manual",
+        "triggerValue": "payload",
+        "triggerType": "msg",
+        "output": "event",
+        "when": "status",
+        "planValue": "",
+        "planType": "backrest-any",
+        "repoValue": "",
+        "repoType": "backrest-any",
+        "types": [],
+        "id": "79d8ef1910e6e863",
+        "z": "2b00c9e2a60010ae",
+        "g": "44b21cf9dacb179b",
+        "x": 390,
+        "y": 413,
+        "wires": [
+            [
+                "81748a48ac832a08"
+            ]
+        ],
+        "inputs": 1
+    },
+    {
+        "type": "debug",
+        "name": "Raw events",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "id": "81748a48ac832a08",
+        "z": "2b00c9e2a60010ae",
+        "g": "44b21cf9dacb179b",
+        "x": 620,
+        "y": 413,
+        "wires": []
+    }
+]

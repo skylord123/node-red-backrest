@@ -1,0 +1,335 @@
+[
+    {
+        "id": "06bd2857df140cc4",
+        "type": "backrest-config",
+        "name": "Example",
+        "autoReconnect": true,
+        "reconnectInterval": "1000",
+        "reconnectTries": "0",
+        "tls": ""
+    },
+    {
+        "id": "68cf7f4d8af74b42",
+        "type": "group",
+        "z": "52cc6d332b3d0c0b",
+        "name": "Back up a plan and report the result",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "7e8a7167b4320316",
+            "347c5a85c4d4c1eb",
+            "fa8be4e429c240df",
+            "28abf829042662ac",
+            "083db95e68448e08"
+        ],
+        "x": 97,
+        "y": 39,
+        "w": 892,
+        "h": 132,
+        "info": "Pick the plan in the Run Backup node. The first output sends the result when the backup succeeds, the second when it fails."
+    },
+    {
+        "type": "inject",
+        "name": "Back up now",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "id": "7e8a7167b4320316",
+        "z": "52cc6d332b3d0c0b",
+        "g": "68cf7f4d8af74b42",
+        "x": 190,
+        "y": 80,
+        "wires": [
+            [
+                "347c5a85c4d4c1eb"
+            ]
+        ]
+    },
+    {
+        "type": "backrest-run-backup",
+        "name": "",
+        "config": "06bd2857df140cc4",
+        "planValue": "",
+        "planType": "backrest-plan",
+        "dryRunValue": "false",
+        "dryRunType": "bool",
+        "wait": true,
+        "id": "347c5a85c4d4c1eb",
+        "z": "52cc6d332b3d0c0b",
+        "g": "68cf7f4d8af74b42",
+        "x": 400,
+        "y": 80,
+        "wires": [
+            [
+                "fa8be4e429c240df"
+            ],
+            [
+                "083db95e68448e08"
+            ]
+        ]
+    },
+    {
+        "type": "function",
+        "name": "Describe backup",
+        "func": "const r = msg.payload;\nconst mb = ((r.summary && r.summary.dataAdded) || 0) / 1e6;\nmsg.payload = `Backed up ${r.planId} in ${Math.round(r.durationMs / 1000)}s, ` +\n    `${mb.toFixed(1)} MB added (snapshot ${r.snapshotId.slice(0, 8)})`;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "fa8be4e429c240df",
+        "z": "52cc6d332b3d0c0b",
+        "g": "68cf7f4d8af74b42",
+        "x": 630,
+        "y": 80,
+        "wires": [
+            [
+                "28abf829042662ac"
+            ]
+        ]
+    },
+    {
+        "type": "debug",
+        "name": "Backup finished",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "id": "28abf829042662ac",
+        "z": "52cc6d332b3d0c0b",
+        "g": "68cf7f4d8af74b42",
+        "x": 880,
+        "y": 80,
+        "wires": []
+    },
+    {
+        "type": "debug",
+        "name": "Backup failed",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "id": "083db95e68448e08",
+        "z": "52cc6d332b3d0c0b",
+        "g": "68cf7f4d8af74b42",
+        "x": 630,
+        "y": 130,
+        "wires": []
+    },
+    {
+        "id": "8860fc5c61a44ef9",
+        "type": "group",
+        "z": "52cc6d332b3d0c0b",
+        "name": "Dry run with the plan from the message",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "b71e30859f345bf2",
+            "8bb067acbb813c11",
+            "92fa4071907cfaad"
+        ],
+        "x": 93,
+        "y": 200,
+        "w": 612,
+        "h": 82,
+        "info": "Set msg.plan in the Inject node to one of your plan IDs. A dry run reports what would be backed up without creating a snapshot."
+    },
+    {
+        "type": "inject",
+        "name": "Dry run",
+        "props": [
+            {
+                "p": "plan",
+                "v": "my-plan-id",
+                "vt": "str"
+            },
+            {
+                "p": "dryRun",
+                "v": "true",
+                "vt": "bool"
+            }
+        ],
+        "repeat": "",
+        "crontab": "",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "id": "b71e30859f345bf2",
+        "z": "52cc6d332b3d0c0b",
+        "g": "8860fc5c61a44ef9",
+        "x": 170,
+        "y": 241,
+        "wires": [
+            [
+                "8bb067acbb813c11"
+            ]
+        ]
+    },
+    {
+        "type": "backrest-run-backup",
+        "name": "",
+        "config": "06bd2857df140cc4",
+        "planValue": "plan",
+        "planType": "msg",
+        "dryRunValue": "dryRun",
+        "dryRunType": "msg",
+        "wait": true,
+        "id": "8bb067acbb813c11",
+        "z": "52cc6d332b3d0c0b",
+        "g": "8860fc5c61a44ef9",
+        "x": 370,
+        "y": 241,
+        "wires": [
+            [
+                "92fa4071907cfaad"
+            ],
+            [
+                "92fa4071907cfaad"
+            ]
+        ]
+    },
+    {
+        "type": "debug",
+        "name": "Dry run result",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "id": "92fa4071907cfaad",
+        "z": "52cc6d332b3d0c0b",
+        "g": "8860fc5c61a44ef9",
+        "x": 600,
+        "y": 241,
+        "wires": []
+    },
+    {
+        "id": "66781954d8ff13d4",
+        "type": "group",
+        "z": "52cc6d332b3d0c0b",
+        "name": "Nightly backup with an alert when it fails",
+        "style": {
+            "label": true
+        },
+        "nodes": [
+            "990dfda148f7ee1a",
+            "5c71f7dd0dd5ffcf",
+            "b3a756c45af4727a",
+            "14b3c12f1a8011d7"
+        ],
+        "x": 93,
+        "y": 311,
+        "w": 1000,
+        "h": 82,
+        "info": "Wire the last node to an email, Telegram, Pushover or other notification node."
+    },
+    {
+        "type": "inject",
+        "name": "Every night at 2:00",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "",
+        "crontab": "00 02 * * *",
+        "once": false,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "id": "990dfda148f7ee1a",
+        "z": "52cc6d332b3d0c0b",
+        "g": "66781954d8ff13d4",
+        "x": 230,
+        "y": 352,
+        "wires": [
+            [
+                "5c71f7dd0dd5ffcf"
+            ]
+        ]
+    },
+    {
+        "type": "backrest-run-backup",
+        "name": "",
+        "config": "06bd2857df140cc4",
+        "planValue": "",
+        "planType": "backrest-plan",
+        "dryRunValue": "false",
+        "dryRunType": "bool",
+        "wait": true,
+        "id": "5c71f7dd0dd5ffcf",
+        "z": "52cc6d332b3d0c0b",
+        "g": "66781954d8ff13d4",
+        "x": 490,
+        "y": 352,
+        "wires": [
+            [],
+            [
+                "b3a756c45af4727a"
+            ]
+        ]
+    },
+    {
+        "type": "function",
+        "name": "Alert text",
+        "func": "msg.topic = `Backup of ${msg.payload.planId} failed`;\nmsg.payload = msg.payload.message || msg.payload.status;\nreturn msg;",
+        "outputs": 1,
+        "timeout": 0,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "id": "b3a756c45af4727a",
+        "z": "52cc6d332b3d0c0b",
+        "g": "66781954d8ff13d4",
+        "x": 700,
+        "y": 352,
+        "wires": [
+            [
+                "14b3c12f1a8011d7"
+            ]
+        ]
+    },
+    {
+        "type": "debug",
+        "name": "Send to your notifier",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "true",
+        "targetType": "full",
+        "statusVal": "",
+        "statusType": "auto",
+        "id": "14b3c12f1a8011d7",
+        "z": "52cc6d332b3d0c0b",
+        "g": "66781954d8ff13d4",
+        "x": 960,
+        "y": 352,
+        "wires": []
+    }
+]
